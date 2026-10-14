@@ -1171,6 +1171,7 @@
   // ---------- GitHub Gist 同步（免费，替代云端） ----------
   const GIST_TOKEN_KEY='ts_gist_token', GIST_ID_KEY='ts_gist_id';
   const GIST_FILE='todo.json'; // 同一 Gist 内按文件名区分各工具数据
+  const LAST_PUSH_KEY='ts_lastpush_todo'; // 记录上次成功上传的快照，用于冲突检测
   (function migrateGistKeys(){
     if(!localStorage.getItem('ts_gist_token')){const t=localStorage.getItem('td_gist_token')||localStorage.getItem('jz_gist_token');if(t)localStorage.setItem('ts_gist_token',t);}
     if(!localStorage.getItem('ts_gist_id')){const i=localStorage.getItem('td_gist_id')||localStorage.getItem('jz_gist_id');if(i)localStorage.setItem('ts_gist_id',i);}
@@ -1207,6 +1208,29 @@
       }else{if(!silent)alert('Gist 数据格式不正确');}
     }catch(e){gistSetStatus('Gist 拉取失败：'+(e.message||e));if(!silent)alert('Gist 拉取失败：'+(e.message||''));}
   }
+  async function autoPull(silent){
+    if(!gistEnabled())return;
+    const id=gistId();if(!id)return;
+    try{
+      const r=await fetch('https://api.github.com/gists/'+id,{headers:gistHeaders()});
+      if(!r.ok)return;
+      const data=await r.json();
+      const f=data.files||{};
+      const content=(f[GIST_FILE]&&f[GIST_FILE].content)!=null?f[GIST_FILE].content:((f['state.json']&&f['state.json'].content)||null);
+      if(!content)return;
+      const remote=JSON.parse(content);
+      if(!(remote&&Array.isArray(remote.tasks)&&Array.isArray(remote.lists)))return;
+      const last=localStorage.getItem(LAST_PUSH_KEY);
+      const cur=JSON.stringify(state);
+      if(last&&last!==cur){
+        if(silent)return;
+        if(!confirm('本机有尚未同步到云端的改动，是否用云端版本覆盖本机？'))return;
+      }
+      state=remote;ensureSeeds();save();curList=curList||'inbox';view=view||'list';render();
+      localStorage.setItem(LAST_PUSH_KEY,JSON.stringify(state));
+      if(!silent)gistSetStatus('已拉取 '+state.tasks.length+' 条 · '+new Date().toLocaleTimeString('zh-CN'));
+    }catch(e){ if(!silent)gistSetStatus('自动拉取失败：'+(e.message||e)); }
+  }
   async function gistPush(){
     if(!gistEnabled())return;
     const payload=JSON.stringify(state);
@@ -1214,12 +1238,14 @@
       if(gistId()){
         const r=await fetch('https://api.github.com/gists/'+gistId(),{method:'PATCH',headers:gistHeaders(),body:JSON.stringify({files:{[GIST_FILE]:{content:payload}}})});
         if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
+        localStorage.setItem(LAST_PUSH_KEY,payload);
         gistSetStatus('已上传 '+state.tasks.length+' 条 · '+new Date().toLocaleTimeString('zh-CN'));
       }else{
         const r=await fetch('https://api.github.com/gists',{method:'POST',headers:gistHeaders(),body:JSON.stringify({public:false,files:{[GIST_FILE]:{content:payload}},description:'卢比工具集同步（待办）'})});
         if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
         const data=await r.json();
         localStorage.setItem(GIST_ID_KEY,data.id);
+        localStorage.setItem(LAST_PUSH_KEY,payload);
         document.getElementById('gistIdI').value=data.id;
         gistSetStatus('已创建 Gist 并上传 '+state.tasks.length+' 条');
         alert('已创建 Gist 并上传');
@@ -1234,6 +1260,9 @@
     alert('已保存 Gist 配置');
     if(gistEnabled())gistPush();
   }
+  // 自动同步增强：打开页面即拉取一次 + 每30秒后台轮询（有未上传冲突则静默跳过）
+  autoPull(true);
+  setInterval(function(){ autoPull(true); }, 30000);
   document.getElementById('gistBtn').onclick=openGistModal;
   document.getElementById('gistClose').onclick=closeGistModal;
   document.getElementById('gistSave').onclick=gistSaveCfg;
