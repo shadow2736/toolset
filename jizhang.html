@@ -1152,7 +1152,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   }
 
   // ---------- GitHub Gist 同步（免费，替代云端） ----------
-  const GIST_TOKEN_KEY='jz_gist_token', GIST_ID_KEY='jz_gist_id';
+  const GIST_TOKEN_KEY='ts_gist_token', GIST_ID_KEY='ts_gist_id';
+  const GIST_FILE='jizhang.json'; // 同一 Gist 内按文件名区分各工具数据
+  (function migrateGistKeys(){
+    if(!localStorage.getItem('ts_gist_token')){const t=localStorage.getItem('td_gist_token')||localStorage.getItem('jz_gist_token');if(t)localStorage.setItem('ts_gist_token',t);}
+    if(!localStorage.getItem('ts_gist_id')){const i=localStorage.getItem('td_gist_id')||localStorage.getItem('jz_gist_id');if(i)localStorage.setItem('ts_gist_id',i);}
+  })();
   let gistTimer=null;
   function gistToken(){return localStorage.getItem(GIST_TOKEN_KEY)||'';}
   function gistId(){return localStorage.getItem(GIST_ID_KEY)||'';}
@@ -1167,7 +1172,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       const r=await fetch('https://api.github.com/gists/'+id,{headers:gistHeaders()});
       if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
       const data=await r.json();
-      const content=data.files&&data.files['state.json']?data.files['state.json'].content:null;
+      const f=data.files||{};
+      const content=(f[GIST_FILE]&&f[GIST_FILE].content)!=null?f[GIST_FILE].content:((f['state.json']&&f['state.json'].content)||null);
       if(!content){if(!silent)toast('Gist 里还没有数据，请先在另一端上传');return;}
       const remote=JSON.parse(content);
       state=normalizeState(remote);
@@ -1185,11 +1191,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     const payload=JSON.stringify(state);
     try{
       if(gistId()){
-        const r=await fetch('https://api.github.com/gists/'+gistId(),{method:'PATCH',headers:gistHeaders(),body:JSON.stringify({files:{'state.json':{content:payload}}})});
+        const r=await fetch('https://api.github.com/gists/'+gistId(),{method:'PATCH',headers:gistHeaders(),body:JSON.stringify({files:{[GIST_FILE]:{content:payload}}})});
         if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
         gistSetStatus('已上传 '+state.records.length+' 笔 · '+new Date().toLocaleTimeString('zh-CN'));
       }else{
-        const r=await fetch('https://api.github.com/gists',{method:'POST',headers:gistHeaders(),body:JSON.stringify({public:false,files:{'state.json':{content:payload}},description:'记账本同步数据（卢比工具集）'})});
+        const r=await fetch('https://api.github.com/gists',{method:'POST',headers:gistHeaders(),body:JSON.stringify({public:false,files:{[GIST_FILE]:{content:payload}},description:'卢比工具集同步（记账本）'})});
         if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
         const data=await r.json();
         localStorage.setItem(GIST_ID_KEY,data.id);
