@@ -341,6 +341,7 @@
         <input type="file" id="importFile" accept="application/json" hidden />
         <button class="tbtn" id="notifyBtn">🔔 提醒</button>
         <button class="tbtn" id="cloudBtn">☁ 同步</button>
+        <button class="tbtn" id="gistBtn">🐙 Gist</button>
       </div>
     </div>
     <div class="content">
@@ -538,7 +539,7 @@
     ensureSeeds(s);
     return s;
   }
-  function save(){localStorage.setItem(KEY,JSON.stringify(state));if(cloudOK&&!syncing)pushCloud();}
+  function save(){localStorage.setItem(KEY,JSON.stringify(state));if(cloudOK&&!syncing)pushCloud();if(gistEnabled())scheduleGistPush();}
 
   // 完整清单数据（星豆社专项 + 四摊 + 9笔还款）
   function fullData(){
@@ -1166,7 +1167,92 @@
   });
 
   render();
+
+  // ---------- GitHub Gist 同步（免费，替代云端） ----------
+  const GIST_TOKEN_KEY='td_gist_token', GIST_ID_KEY='td_gist_id';
+  let gistTimer=null;
+  function gistToken(){return localStorage.getItem(GIST_TOKEN_KEY)||'';}
+  function gistId(){return localStorage.getItem(GIST_ID_KEY)||'';}
+  function gistEnabled(){return !!gistToken();}
+  function gistHeaders(){return {'Authorization':'Bearer '+gistToken(),'Content-Type':'application/json','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};}
+  function gistSetStatus(t){const el=document.getElementById('gistStatus');if(el)el.textContent=t;}
+  function openGistModal(){
+    document.getElementById('gistTokenI').value=gistToken();
+    document.getElementById('gistIdI').value=gistId();
+    gistSetStatus(gistEnabled()?'已配置':'未配置');
+    document.getElementById('gistMask').classList.add('show');
+  }
+  function closeGistModal(){document.getElementById('gistMask').classList.remove('show');}
+  async function gistPull(silent){
+    if(!gistEnabled()){if(!silent)alert('请先填写 GitHub Token 并保存配置');return;}
+    const id=gistId();if(!id){if(!silent)alert('还没有 Gist，请先上传到 Gist');return;}
+    if(!silent&&!confirm('将从 Gist 恢复数据并覆盖本机当前所有清单/任务。\n本机未上传的改动会丢失，确定继续？'))return;
+    try{
+      const r=await fetch('https://api.github.com/gists/'+id,{headers:gistHeaders()});
+      if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
+      const data=await r.json();
+      const content=data.files&&data.files['state.json']?data.files['state.json'].content:null;
+      if(!content){if(!silent)alert('Gist 里还没有数据，请先在另一端上传');return;}
+      const remote=JSON.parse(content);
+      if(remote&&Array.isArray(remote.tasks)&&Array.isArray(remote.lists)){
+        state=remote;ensureSeeds();save();curList='inbox';view='list';render();
+        gistSetStatus('已恢复 '+state.tasks.length+' 条 · '+new Date().toLocaleTimeString('zh-CN'));
+        if(!silent)alert('已从 Gist 恢复 '+state.tasks.length+' 条任务');
+      }else{if(!silent)alert('Gist 数据格式不正确');}
+    }catch(e){gistSetStatus('Gist 拉取失败：'+(e.message||e));if(!silent)alert('Gist 拉取失败：'+(e.message||''));}
+  }
+  async function gistPush(){
+    if(!gistEnabled())return;
+    const payload=JSON.stringify(state);
+    try{
+      if(gistId()){
+        const r=await fetch('https://api.github.com/gists/'+gistId(),{method:'PATCH',headers:gistHeaders(),body:JSON.stringify({files:{'state.json':{content:payload}}})});
+        if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
+        gistSetStatus('已上传 '+state.tasks.length+' 条 · '+new Date().toLocaleTimeString('zh-CN'));
+      }else{
+        const r=await fetch('https://api.github.com/gists',{method:'POST',headers:gistHeaders(),body:JSON.stringify({public:false,files:{'state.json':{content:payload}},description:'待办同步数据（卢比工具集）'})});
+        if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||('HTTP '+r.status));}
+        const data=await r.json();
+        localStorage.setItem(GIST_ID_KEY,data.id);
+        document.getElementById('gistIdI').value=data.id;
+        gistSetStatus('已创建 Gist 并上传 '+state.tasks.length+' 条');
+        alert('已创建 Gist 并上传');
+      }
+    }catch(e){gistSetStatus('Gist 上传失败：'+(e.message||e));alert('Gist 上传失败：'+(e.message||''));}
+  }
+  function scheduleGistPush(){clearTimeout(gistTimer);gistTimer=setTimeout(()=>{gistPush();},1200);}
+  function gistSaveCfg(){
+    localStorage.setItem(GIST_TOKEN_KEY,document.getElementById('gistTokenI').value.trim());
+    localStorage.setItem(GIST_ID_KEY,document.getElementById('gistIdI').value.trim());
+    gistSetStatus(gistEnabled()?('已配置'+(gistId()?' · Gist:'+gistId():' · 上传后生成')):'未配置');
+    alert('已保存 Gist 配置');
+    if(gistEnabled())gistPush();
+  }
+  document.getElementById('gistBtn').onclick=openGistModal;
+  document.getElementById('gistClose').onclick=closeGistModal;
+  document.getElementById('gistSave').onclick=gistSaveCfg;
+  document.getElementById('gistPullBtn2').onclick=()=>gistPull(false);
+  document.getElementById('gistPushBtn2').onclick=gistPush;
+  document.getElementById('gistMask').addEventListener('click',e=>{if(e.target.id==='gistMask')closeGistModal();});
 })();
+
 </script>
+  <div class="mask" id="gistMask">
+    <div class="modal" style="max-width:420px">
+      <h3>GitHub Gist 同步（免费）</h3>
+      <div class="hint">用私密 Gist 存数据，跨设备免费同步。Token 只存本机，不上传代码。</div>
+      <div class="field"><label>GitHub Token（需 gist 权限）</label><input id="gistTokenI" type="password" placeholder="ghp_..." /></div>
+      <div class="field"><label>Gist ID（留空=首次上传自动创建）</label><input id="gistIdI" placeholder="如 a1b2c3d4e5" /></div>
+      <div class="hint" id="gistStatus">未配置</div>
+      <div class="row" style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" id="gistPullBtn2" style="flex:1">⬇️ 从 Gist 恢复</button>
+        <button class="btn primary" id="gistPushBtn2" style="flex:1">⬆️ 上传到 Gist</button>
+      </div>
+      <div class="row" style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" id="gistSave" style="flex:1">保存配置</button>
+        <button class="btn" id="gistClose" style="flex:1">关闭</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
