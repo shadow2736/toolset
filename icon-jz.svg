@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect x="0" y="0" width="128" height="128" rx="30" fill="#FF7A45"/>
+  <rect x="18" y="24" width="92" height="80" rx="10" fill="#FFFFFF"/>
+  <rect x="30" y="38" width="34" height="7" rx="3.5" fill="#FF7A45"/>
+  <path d="M30 58 L36 64 L48 50" fill="none" stroke="#FF7A45" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="58" y="54" width="40" height="6" rx="3" fill="#FFD9C7"/>
+  <circle cx="46" cy="84" r="12" fill="#F2641E"/>
+  <text x="46" y="89" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="middle">¥</text>
+  <rect x="62" y="80" width="36" height="7" rx="3.5" fill="#FFD9C7"/>
+</svg>

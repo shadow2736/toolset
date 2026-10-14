@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>我的工具集</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="我的工具集">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FF7A45">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<style>
+  :root{
+    --brand:#FF7A45;--brand2:#FF5C38;
+    --bg1:#FFF1E8;--bg2:#FFE3D3;
+    --ink:#2D2A33;--ink2:#8A8290;--card:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));color:var(--ink);-webkit-font-smoothing:antialiased}
+
+  /* ===== 首页 ===== */
+  .home{max-width:780px;margin:0 auto;padding:54px 22px 60px;min-height:100vh}
+  .hero{text-align:center;margin-bottom:40px}
+  .hero .logo{font-size:52px;filter:drop-shadow(0 6px 14px rgba(255,92,56,.25))}
+  .hero h1{font-size:30px;margin:16px 0 8px;letter-spacing:2px}
+  .hero p{color:var(--ink2);font-size:14px;letter-spacing:.5px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .card{background:var(--card);border-radius:22px;padding:30px 26px;cursor:pointer;
+    transition:transform .18s ease,box-shadow .18s ease;
+    box-shadow:0 10px 28px rgba(255,92,56,.10);border:1px solid #FFE4D6;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,122,69,.12),transparent 70%)}
+  .card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(255,92,56,.20)}
+  .card .ic{font-size:44px;position:relative}
+  .card h3{font-size:21px;margin:16px 0 10px;position:relative}
+  .card p{color:var(--ink2);font-size:13.5px;line-height:1.7;position:relative}
+  .card .go{margin-top:18px;color:var(--brand2);font-weight:600;font-size:14px;position:relative}
+  .foot{text-align:center;color:var(--ink2);font-size:12.5px;margin-top:46px;line-height:1.8}
+  .foot b{color:var(--brand2)}
+
+  /* ===== 工具内嵌视图 ===== */
+  .frame-view{display:none;position:fixed;inset:0;background:#fff;flex-direction:column;z-index:10}
+  .frame-view.show{display:flex}
+  .fv-bar{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid #eee;
+    background:#fff;flex:0 0 auto;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+  .fv-back{background:#fff;border:1px solid #e2e2e8;border-radius:11px;padding:8px 15px;cursor:pointer;
+    font-size:14px;color:var(--ink);display:flex;align-items:center;gap:6px;transition:.15s}
+  .fv-back:hover{background:#f6f6f8;border-color:#d0d0d8}
+  .fv-title{font-weight:600;font-size:16px}
+  .fv-tag{margin-left:auto;font-size:12px;color:var(--ink2);background:#f4f4f7;padding:5px 11px;border-radius:20px}
+  .fv-frame{width:100%;flex:1 1 auto;border:0;background:#fff;display:block}
+
+  @media (max-width:560px){
+    .home{padding:32px 14px 44px}
+    .hero{margin-bottom:26px}
+    .hero .logo{font-size:42px}
+    .hero h1{font-size:23px;margin:12px 0 6px;letter-spacing:1px}
+    .hero p{font-size:12.5px}
+    /* 手机端保持两列，卡片转为紧凑竖排 */
+    .grid{grid-template-columns:1fr 1fr;gap:12px}
+    .card{border-radius:18px;padding:20px 14px 16px}
+    .card::before{right:-24px;top:-24px;width:88px;height:88px}
+    .card .ic{font-size:34px}
+    .card h3{font-size:16.5px;margin:12px 0 6px;letter-spacing:.3px}
+    .card p{font-size:11.5px;line-height:1.6;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .card .go{margin-top:12px;font-size:12.5px}
+    .foot{margin-top:32px;font-size:11.5px;padding:0 6px}
+  }
+  /* 极窄屏（如 iPhone SE / 320px）再降一档字号，避免换行过碎 */
+  @media (max-width:360px){
+    .home{padding:28px 10px 38px}
+    .grid{gap:9px}
+    .card{padding:16px 10px 13px;border-radius:16px}
+    .card .ic{font-size:29px}
+    .card h3{font-size:15px;margin:10px 0 5px}
+    .card p{font-size:10.5px;-webkit-line-clamp:2}
+  }
+</style>
+</head>
+<body>
+  <!-- 首页：工具集导航 -->
+  <div class="home" id="home">
+    <div class="hero">
+      <div class="logo">🧰</div>
+      <h1>我的工具集</h1>
+      <p>一个入口，搞定日常效率、专注与记账</p>
+    </div>
+    <div class="grid">
+      <div class="card" data-open="todo">
+        <div class="ic">📋</div>
+        <h3>待办清单</h3>
+        <p>事项管理 · 每月还款计划 · 日历/看板视图 · 多端云同步共享</p>
+        <div class="go">打开 →</div>
+      </div>
+      <div class="card" data-open="jizhang">
+        <div class="ic">💰</div>
+        <h3>记账本</h3>
+        <p>收支记录 · 分类报表 · 月度预算 · 模仿随手记，手机/电脑通用</p>
+        <div class="go">打开 →</div>
+      </div>
+      <div class="card" data-open="pomodoro">
+        <div class="ic">🍅</div>
+        <h3>番茄钟</h3>
+        <p>专注计时 · 番茄工作法 · 休息提醒 · 数据云同步</p>
+        <div class="go">打开 →</div>
+      </div>
+    </div>
+    <div class="foot">
+      三个工具数据互相隔离，分别存储在本机浏览器<br>
+      待办清单 · 番茄钟 支持 <b>多端云同步</b>（手机电脑共享同一份）· 记账本数据存本机、可导出备份
+    </div>
+  </div>
+
+  <!-- 工具内嵌视图 -->
+  <div class="frame-view" id="frameView">
+    <div class="fv-bar">
+      <button class="fv-back" id="fvBack">← 工具集</button>
+      <span class="fv-title" id="fvTitle">工具</span>
+      <span class="fv-tag" id="fvTag"></span>
+    </div>
+    <iframe class="fv-frame" id="fvFrame" src="" title="tool"></iframe>
+  </div>
+
+<script>
+  var META={
+    todo:{title:'📋 待办清单',tag:'云同步 · 多端共享',file:'todo.html?v=2'},
+    jizhang:{title:'💰 记账本',tag:'本机存储 · 可导出',file:'jizhang.html?v=6'},
+    pomodoro:{title:'🍅 番茄钟',tag:'专注计时 · 云同步',file:'pomodoro.html'}
+  };
+  var home=document.getElementById('home');
+  var fv=document.getElementById('frameView');
+  var fvFrame=document.getElementById('fvFrame');
+  var fvTitle=document.getElementById('fvTitle');
+  var fvTag=document.getElementById('fvTag');
+
+  document.querySelectorAll('.card').forEach(function(c){
+    c.addEventListener('click',function(){ openTool(c.getAttribute('data-open')); });
+  });
+  document.getElementById('fvBack').addEventListener('click',function(){
+    fv.classList.remove('show');
+    fvFrame.src='about:blank';
+    home.style.display='';
+    window.scrollTo(0,0);
+  });
+  function openTool(k){
+    var m=META[k];if(!m)return;
+    fvFrame.src=m.file;
+    fvTitle.textContent=m.title;
+    fvTag.textContent=m.tag;
+    fv.classList.add('show');
+    home.style.display='none';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>事项清单 · 嘀嗒风格复刻</title>
+<link rel="icon" type="image/svg+xml" href="icon-todo.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-todo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="待办清单">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --panel:#ffffff;
+    --ink:#1f2329;
+    --ink-2:#646a73;
+    --ink-3:#9aa0a6;
+    --line:#e9ebf0;
+    --accent:#f5a623;
+    --accent-soft:#fff4e0;
+    --blue:#3370ff;
+    --green:#34c759;
+    --red:#f5534e;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.04);
+    --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;
+    display:flex;height:100vh;overflow:hidden;
+  }
+  .sidebar{
+    width:248px;flex:0 0 248px;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;padding:16px 10px;overflow:auto;
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 10px 16px;font-weight:700;font-size:16px}
+  .brand .dot{width:22px;height:22px;border-radius:7px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+  .nav-group{margin-bottom:14px}
+  .nav-title{font-size:12px;color:var(--ink-3);padding:6px 12px;letter-spacing:.04em}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:9px;
+    cursor:pointer;color:var(--ink);user-select:none;margin:2px 0;
+  }
+  .nav-item:hover{background:#f0f1f3}
+  .nav-item.active{background:var(--accent-soft);color:#a8650a;font-weight:600}
+  .nav-item .ico{width:18px;text-align:center;font-size:15px}
+  .nav-item .cnt{margin-left:auto;font-size:12px;color:var(--ink-3);background:#eef0f3;
+    border-radius:10px;padding:1px 8px}
+  .nav-item.active .cnt{background:#ffe6bd;color:#a8650a}
+  .nav-item .del{margin-left:auto;opacity:0;color:var(--ink-3);font-size:13px;padding:0 4px}
+  .nav-item:hover .del{opacity:1}
+  .nav-item .ren{opacity:0;color:var(--blue);font-size:13px;padding:0 4px;cursor:pointer}
+  .nav-item:hover .ren{opacity:1}
+  .hamburger{display:none;width:34px;height:34px;border:none;background:#f0f1f3;border-radius:8px;
+    font-size:18px;cursor:pointer;color:var(--ink-2);flex:0 0 auto;align-items:center;justify-content:center}
+  .hamburger:hover{background:#e7e9ed}
+  .add-list{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--blue);
+    cursor:pointer;border-radius:9px;font-weight:600}
+  .add-list:hover{background:#eef2ff}
+  .reset-link{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--ink-3);
+    cursor:pointer;border-radius:9px;font-weight:600;margin-top:4px}
+  .reset-link:hover{background:#f0f1f3}
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .topbar{
+    height:60px;flex:0 0 60px;background:var(--panel);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;padding:0 22px;
+  }
+  .topbar h1{font-size:18px;font-weight:700}
+  .topbar .sub{color:var(--ink-3);font-size:13px}
+  .views{display:flex;gap:4px;margin-left:8px;background:#f0f1f3;border-radius:9px;padding:3px}
+  .vtab{padding:5px 14px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink-2);font-weight:600}
+  .vtab.active{background:#fff;color:var(--accent);box-shadow:var(--shadow)}
+  .search{flex:1;max-width:300px;margin-left:auto;position:relative}
+  .search input{width:100%;border:1px solid var(--line);background:#f7f8fa;border-radius:9px;
+    padding:8px 12px 8px 34px;font-size:13px;outline:none}
+  .search input:focus{border-color:var(--accent);background:#fff}
+  .search .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+  .tools{display:flex;gap:6px;align-items:center}
+  .tbtn{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:8px;
+    padding:6px 11px;font-size:12px;cursor:pointer;font-weight:600}
+  .tbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .tbtn.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .content{flex:1;overflow-y:auto;padding:22px 26px 40px}
+  .content-inner{max-width:1080px;margin:0 auto}
+  .add-bar{
+    display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow);margin-bottom:18px;
+  }
+  .add-bar input{flex:1;border:none;outline:none;font-size:15px;background:transparent}
+  .add-bar .plus{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;
+    border:none;font-size:16px;cursor:pointer;flex:0 0 auto}
+  .date-head{font-size:13px;color:var(--ink-2);font-weight:600;margin:18px 0 8px;padding-left:4px}
+  .date-head .d-sub{color:var(--ink-3);font-weight:400;margin-left:8px}
+  .task{
+    display:flex;align-items:flex-start;gap:12px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);
+    cursor:pointer;transition:.15s;
+  }
+  .task:hover{border-color:#dfe2e8}
+  .task.dragging{opacity:.4}
+  .task.drag-over{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .check{width:20px;height:20px;border-radius:50%;border:2px solid #c4c9d0;flex:0 0 auto;
+    margin-top:1px;cursor:pointer;position:relative;transition:.15s}
+  .check:hover{border-color:var(--accent)}
+  .task.done .check{background:var(--accent);border-color:var(--accent)}
+  .task.done .check::after{content:"✓";color:#fff;font-size:12px;position:absolute;
+    left:3px;top:-1px}
+  /* 内联子任务（渠道还款） */
+  .sublist{margin-top:8px;padding-left:8px;border-left:2px solid #eee;display:flex;flex-direction:column;gap:5px}
+  .sub{display:flex;align-items:center;gap:8px;font-size:13px;color:#555;cursor:pointer;user-select:none}
+  .sub-chk{width:15px;height:15px;border-radius:4px;border:2px solid #c4c9d0;flex:0 0 auto;position:relative;transition:.15s}
+  .sub:hover .sub-chk{border-color:var(--accent)}
+  .sub.on .sub-chk{background:var(--accent);border-color:var(--accent)}
+  .sub.on .sub-chk::after{content:"✓";color:#fff;font-size:10px;position:absolute;left:2px;top:-2px}
+  .sub.on .sub-txt{text-decoration:line-through;color:#aaa}
+  .task-body{flex:1;min-width:0}
+  .task-title{font-size:15px;font-weight:500;word-break:break-word}
+  .task.done .task-title{color:var(--ink-3);text-decoration:line-through}
+  .task-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:12px;color:var(--ink-2)}
+  .chip{display:inline-flex;align-items:center;gap:4px;background:#f2f3f5;border-radius:7px;
+    padding:2px 8px}
+  .chip.due{color:#a8650a;background:var(--accent-soft)}
+  .chip.due.over{color:#fff;background:var(--red)}
+  .chip.tag{color:var(--blue);background:#eef2ff}
+  .pri{display:inline-flex;align-items:center;gap:3px}
+  .pri .p{width:7px;height:7px;border-radius:50%}
+  .pri.p3 .p{background:var(--red)} .pri.p2 .p{background:var(--accent)} .pri.p1 .p{background:var(--blue)}
+  .sub-prog{color:var(--ink-3)}
+  .empty{text-align:center;color:var(--ink-3);padding:60px 0;font-size:14px}
+  .empty .big{font-size:40px;margin-bottom:10px}
+  .mask{position:fixed;inset:0;background:rgba(20,22,28,.4);display:none;align-items:flex-start;
+    justify-content:center;padding-top:70px;z-index:50}
+  .mask.show{display:flex}
+  .modal{width:540px;max-width:92vw;background:var(--panel);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+    padding:20px 22px;animation:pop .16s ease}
+  @keyframes pop{from{transform:translateY(-8px);opacity:.6}to{transform:none;opacity:1}}
+  .modal h3{font-size:17px;margin-bottom:14px}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:12px;color:var(--ink-3);margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:9px;
+    padding:9px 11px;font-size:14px;outline:none;font-family:inherit}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+  .field textarea{resize:vertical;min-height:60px}
+  .row{display:flex;gap:12px}
+  .row .field{flex:1}
+  .sub-add{display:flex;gap:8px;margin-top:6px}
+  .sub-add input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;outline:none}
+  .sub-item{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px dashed var(--line)}
+  .sub-item .sc{width:16px;height:16px;border-radius:4px;border:1.5px solid #c4c9d0;cursor:pointer;flex:0 0 auto}
+  .sub-item.done .sc{background:var(--accent);border-color:var(--accent)}
+  .sub-item.done span{text-decoration:line-through;color:var(--ink-3)}
+  .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+  .btn{border:none;border-radius:9px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:#e0960f}
+  .btn.ghost{background:#f2f3f5;color:var(--ink-2)}
+  .btn.ghost:hover{background:#e7e9ed}
+  .btn.danger{background:#fdecec;color:var(--red)}
+  .btn.danger:hover{background:#fbdada}
+  .hint{font-size:12px;color:var(--ink-3);margin-top:10px}
+
+  /* 日历 */
+  .cal-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .cal-head h2{font-size:18px;font-weight:700}
+  .cal-nav{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:8px;
+    width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+  .cal-nav:hover{border-color:var(--accent);color:var(--accent)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .cal-dow{text-align:center;font-size:12px;color:var(--ink-3);padding:4px 0;font-weight:600}
+  .cal-cell{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-height:96px;
+    padding:8px;cursor:pointer;transition:.12s;display:flex;flex-direction:column;gap:4px}
+  .cal-cell:hover{border-color:#dfe2e8}
+  .cal-cell.other{opacity:.4}
+  .cal-cell.today{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .cal-cell.sel{background:var(--accent-soft)}
+  .cal-dnum{font-size:13px;font-weight:600;color:var(--ink)}
+  .cal-cell.today .cal-dnum{color:var(--accent)}
+  .cal-dot{font-size:11px;color:var(--ink-2);background:#f2f3f5;border-radius:6px;padding:2px 6px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cal-dot.hi{background:#fdecec;color:var(--red)}
+  .cal-dot.mid{background:var(--accent-soft);color:#a8650a}
+  .cal-more{font-size:11px;color:var(--blue)}
+  .day-list-head{font-size:15px;font-weight:700;margin:22px 0 10px;color:var(--ink)}
+
+  /* 看板 */
+  /* 看板视图下：解除内层宽度限制，让 .board 成为唯一横向滚动容器 */
+  /* overflow:hidden 关键——.content 若是 overflow-y:auto，规范会把 overflow-x:visible
+     提升成 auto，于是它也变成横向滚动容器并抢走触摸手势（表现为"拖不动"）。
+     看板模式下让 .content 只负责纵向，横向 100% 交给 .board。 */
+  .content.board-mode{padding-left:0;padding-right:0;overflow-x:hidden;overflow-y:auto}
+  /* overflow-x 显式给 hidden：只写 overflow-y:auto 时规范会把 overflow-x:visible
+     提升为 auto，content-inner 就会变成横向滚动容器并抢走触摸手势 */
+  .content.board-mode .content-inner{max-width:none;padding:0 16px 0;
+    height:100%;overflow-y:auto;overflow-x:hidden}
+  .board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(272px,1fr);
+    gap:14px;align-items:stretch;overflow-x:auto;overflow-y:hidden;
+    padding:0 4px 16px;
+    /* pan-x 而非 pan-x pan-y：等价于 auto，不声明优先级。写 pan-x 表示
+       "横向平移由本元素消费"，横向滑动才不会被祖先抢走 */
+    touch-action:pan-x pinch-zoom;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    scrollbar-width:thin;scrollbar-color:#c9cfd8 transparent}
+  .board::-webkit-scrollbar{height:9px}
+  .board::-webkit-scrollbar-track{background:#eef0f3;border-radius:6px}
+  .board::-webkit-scrollbar-thumb{background:#c9cfd8;border-radius:6px;border:2px solid #eef0f3}
+  .board::-webkit-scrollbar-thumb:active{background:#a8b0bd}
+  .col{flex:0 0 280px;background:#eef0f3;border-radius:14px;padding:10px;min-width:0;
+    /* 列内独立滚动：还款计划有 35 条，若不限制会被撑到 8000px，
+       整块看板变成一根长条，其他列被拖得完全看不到 */
+    display:flex;flex-direction:column;
+    max-height:calc(100vh - 250px);
+    scrollbar-width:thin;scrollbar-color:#cdd3db transparent}
+  .col.drag-over{outline:2px dashed var(--accent);outline-offset:2px}
+  .col-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;padding:6px 8px 10px;
+    flex:0 0 auto}
+  .col-head .col-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .col-head .c-cnt{margin-left:auto;flex:0 0 auto;font-size:12px;color:var(--ink-3);background:#fff;border-radius:10px;padding:1px 8px}
+  /* 任务区纵向滚动，列头固定 */
+  .col-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+    margin:0 -4px;padding:0 4px 2px;
+    touch-action:pan-y;overscroll-behavior-y:contain;
+    scrollbar-width:thin;scrollbar-color:#cdd3db transparent}
+  .col-body::-webkit-scrollbar{width:6px}
+  .col-body::-webkit-scrollbar-thumb{background:#cdd3db;border-radius:6px}
+  .col-body::-webkit-scrollbar-track{background:transparent}
+  .col .task{margin-bottom:8px;box-shadow:none}
+  .col-empty{text-align:center;color:var(--ink-3);font-size:12px;padding:18px 0;
+    border:1px dashed #d5d9e0;border-radius:10px;margin:2px}
+  /* 看板顶部列名导航：一眼看全所有清单 + 点击直达，解决"显示不全、要盲滑" */
+  .bnav{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+  .bnav-arrow{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);
+    background:#fff;color:var(--ink);font-size:17px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    transition:opacity .18s,background .18s}
+  .bnav-arrow:hover:not([disabled]){background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .bnav-arrow[disabled]{opacity:.28;cursor:default}
+  .bnav-track{flex:1 1 auto;min-width:0;display:flex;gap:7px;overflow-x:auto;
+    scrollbar-width:none;-ms-overflow-style:none;padding:2px 2px}
+  .bnav-track::-webkit-scrollbar{display:none}
+  .bnav-track .bn{flex:0 0 auto;padding:6px 13px;border-radius:999px;background:#f0f1f3;
+    color:var(--ink-2);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;
+    border:1px solid transparent;transition:background .16s,color .16s,border-color .16s}
+  .bnav-track .bn:hover{background:#e7e9ed}
+  .bnav-track .bn.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .bnav-track .bn .n{opacity:.55;margin-left:4px;font-size:11px;font-weight:600}
+  .board-hint{text-align:center;color:var(--ink-3);font-size:11.5px;padding:6px 16px 14px}
+  .board-empty{text-align:center;color:var(--ink-3);font-size:14px;padding:70px 20px;line-height:2}
+  .board-empty span{font-size:12.5px}
+
+  /* 移动端适配 */
+  @media (max-width:760px){
+    /* 侧栏改为抽屉 */
+    .sidebar{
+      position:fixed;top:0;left:0;height:100%;width:252px;z-index:60;
+      transform:translateX(-100%);transition:transform .25s ease;box-shadow:2px 0 16px rgba(0,0,0,.18);
+    }
+    .sidebar.open{transform:translateX(0)}
+    body.sidebar-open::after{
+      content:'';position:fixed;inset:0;background:rgba(20,22,28,.42);z-index:55;
+    }
+    .hamburger{display:flex}
+    /* 顶栏换行 */
+    .topbar{flex-wrap:wrap;height:auto;padding:8px 12px;gap:8px;align-items:center}
+    .topbar h1{font-size:16px;flex:1 1 auto;min-width:0}
+    .topbar .sub{display:none}
+    .views{order:2;margin-left:0}
+    .search{order:3;flex:1 1 100%;max-width:none;margin-left:0}
+    .tools{order:4;flex:1 1 100%;flex-wrap:wrap;margin-left:0;gap:6px}
+    .tbtn{flex:1 1 auto;text-align:center;padding:7px 8px}
+    /* 内容区 */
+    .content{padding:16px 14px 32px}
+    .content-inner{max-width:100%}
+    .add-bar{padding:10px 12px;margin-bottom:14px}
+    .add-bar input{font-size:16px}
+    .task{padding:11px 12px;gap:10px}
+    .task-title{font-size:15px}
+    /* 日历 */
+    .cal-grid{gap:4px}
+    .cal-cell{min-height:58px;padding:5px}
+    .cal-dnum{font-size:11px}
+    .cal-dot{font-size:9px;padding:1px 4px}
+    .cal-more{font-size:9px}
+    .cal-head h2{font-size:16px}
+    .cal-nav{width:28px;height:28px}
+    /* 看板：手机端一屏一列，横向可滑 */
+    .content.board-mode .content-inner{padding:0 12px}
+    .board{gap:10px;padding:0 4px 12px;
+      grid-auto-columns:calc(100vw - 56px)}
+    .board::-webkit-scrollbar{height:7px}
+    .col{padding:9px;border-radius:12px}
+    .col{max-height:calc(100vh - 236px)}
+    .col-head{font-size:13px;padding:5px 6px 9px}
+    .bnav{gap:5px;margin-bottom:10px}
+    .bnav-arrow{width:27px;height:27px;font-size:15px}
+    .bnav-track .bn{padding:5px 11px;font-size:12px}
+    .board-hint{font-size:11px;padding:6px 12px 10px}
+    /* 弹窗 */
+    .modal{max-width:96vw;padding:16px 16px}
+    .row{flex-direction:column;gap:0}
+    .modal-actions{flex-direction:column-reverse;gap:10px}
+    .modal-actions>div{display:flex;gap:10px;width:100%}
+    .modal-actions .btn{flex:1}
+  }
+</style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="dot">✓</span>事项清单</div>
+    <div class="nav-group" id="smartNav"></div>
+    <div class="nav-group">
+      <div class="nav-title">我的清单</div>
+      <div id="customNav"></div>
+      <div class="add-list" id="addListBtn">＋ 新建清单</div>
+      <div class="reset-link" id="resetBtn">🔄 恢复完整清单</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="菜单">☰</button>
+      <h1 id="listTitle">待办箱</h1>
+      <span class="sub" id="listSub"></span>
+      <div class="views">
+        <span class="vtab active" data-view="list">列表</span>
+        <span class="vtab" data-view="calendar">日历</span>
+        <span class="vtab" data-view="board">看板</span>
+      </div>
+      <div class="search">
+        <span class="si">🔍</span>
+        <input id="searchInput" placeholder="搜索任务、备注、标签…" />
+      </div>
+      <div class="tools">
+        <button class="tbtn" id="exportBtn">导出</button>
+        <button class="tbtn" id="importBtn">导入</button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+        <button class="tbtn" id="notifyBtn">🔔 提醒</button>
+        <button class="tbtn" id="cloudBtn">☁ 同步</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="content-inner">
+        <div class="add-bar" id="addBar">
+          <button class="plus" id="quickAddBtn">＋</button>
+          <input id="quickAddInput" placeholder="添加任务，回车保存…" />
+        </div>
+        <div id="taskArea"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="mask" id="mask">
+    <div class="modal" id="modal">
+      <h3>任务详情</h3>
+      <div class="field">
+        <label>标题</label>
+        <input id="mTitle" placeholder="任务标题" />
+      </div>
+      <div class="field">
+        <label>备注</label>
+        <textarea id="mNote" placeholder="补充说明…"></textarea>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>所属清单</label>
+          <select id="mList"></select>
+        </div>
+        <div class="field">
+          <label>截止日期</label>
+          <input id="mDue" type="date" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>优先级</label>
+          <select id="mPri">
+            <option value="0">无</option>
+            <option value="1">低</option>
+            <option value="2">中</option>
+            <option value="3">高</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>标签（逗号分隔）</label>
+          <input id="mTags" placeholder="工作, 紧急" />
+        </div>
+      </div>
+      <div class="field">
+        <label>子任务</label>
+        <div id="subList"></div>
+        <div class="sub-add">
+          <input id="subInput" placeholder="添加子任务，回车保存" />
+          <button class="btn ghost" id="subAddBtn">添加</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn danger" id="deleteBtn">删除</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn ghost" id="cancelBtn">取消</button>
+          <button class="btn primary" id="saveBtn">保存</button>
+        </div>
+      </div>
+      <div class="hint">数据自动保存在本浏览器（localStorage），清除浏览器数据会丢失，建议定期导出备份。</div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script>
+(function(){
+  const KEY='ticktick_clone_v2';
+  let state=null;
+  let curList='inbox';
+  let keyword='';
+  let editingId=null;
+  let draftSubs=[];
+  let view='list';
+  let curMonth=new Date().toISOString().slice(0,7);
+  let curDay=new Date().toISOString().slice(0,10);
+  let dragId=null;
+
+  const SMART=[
+    {id:'today',name:'今天',ico:'📅'},
+    {id:'upcoming',name:'即将到来',ico:'⏰'},
+    {id:'inbox',name:'待办箱',ico:'📥'},
+    {id:'completed',name:'已完成',ico:'✅'},
+  ];
+
+  const DEFAULT_LISTS=[
+    {id:'xingdou',name:'星豆社'},{id:'siyu',name:'私域运营'},
+    {id:'jicai',name:'集采分销'},{id:'shise',name:'拾色副业'},
+    {id:'ipyun',name:'IP运营'},{id:'xingdou_week',name:'星豆社·本周待办 10-13'},{id:'huankuan',name:'还款计划'}
+  ];
+
+  // 幂等补种数据：只补 seed 不存在的任务，绝不覆盖用户已改的状态
+  // 注意：必须声明在 load() 之前（const 有TDZ，顺序错了会抛 "Cannot access before initialization"）
+  const SEEDS=[
+    {seed:'zy2-haok',listId:'ipyun',title:'确认好评卡印刷进度',note:'90×54mm双面满版+3mm出血，设计稿已定稿，跟印刷厂确认排期/材质/数量',pri:2,tags:['好评卡','印刷'],subs:['问印刷厂排期与打样时间','确认成品数量与到货日']},
+    {seed:'zy2-market',listId:'ipyun',title:'确认逐玉2 二级市场是否继续，回收卡能否挂出去',note:'决策项：二级市场做不做、回收卡能否上架（涉及合规/渠道/定价）',pri:3,tags:['逐玉2','二级市场','决策'],subs:['明确二级市场是否继续做','确认回收卡能否挂出去（合规与渠道）','拍板结论与后续动作']},
+    {seed:'zy2-xianyu',listId:'ipyun',title:'补齐逐玉2 闲鱼采购物流图',note:'闲鱼采购的物流凭证/开箱图补齐',pri:2,tags:['逐玉2','闲鱼','素材'],subs:[]},
+    {seed:'zy2-ship1',listId:'ipyun',title:'逐玉2 商城发货与板砖沟通',note:'与板砖确认发货节奏/数量/代发或包邮方案',pri:2,tags:['逐玉2','发货','板砖'],subs:[]},
+    {seed:'zy2-xhs',listId:'ipyun',title:'逐玉2 小红书宣发',note:'小红书内容宣发排期',pri:2,tags:['逐玉2','小红书','宣发'],subs:[]},
+    {seed:'hj-ship',listId:'ipyun',title:'花开锦绣商城发货与板砖沟通',note:'与板砖确认花开锦绣发货安排',pri:2,tags:['花开锦绣','发货','板砖'],subs:[]},
+    // —— 星豆社本周待办 10-13（看板 #68-#92 镜像，幂等补种，绝不覆盖已改状态）——
+    {seed:'xdw-68',listId:'xingdou_week',title:'[#68] 周报模板 + 本周数据填充',note:'周期周六→下周五；七节结构已定稿(用户数据/销量/本周事项/下周计划/小红书表现/每篇明细/下周选题)',pri:2,tags:['星豆社','周报'],done:true,subs:[]},
+    {seed:'xdw-69',listId:'xingdou_week',title:'[#69] 小红书补发布 3条/天',note:'降单点依赖；素材用官卡PR版/带钩子版',pri:2,tags:['星豆社','小红书'],subs:['筛可发稿','实际发布≥3篇/天','记录发了哪几篇']},
+    {seed:'xdw-71',listId:'xingdou_week',title:'[#71] 好评卡沟通推进(跟彬彬打包)',note:'已收货；已跟彬彬沟通打包发货(用户2026-10-13确认完成)；⚠️与IP运营「确认好评卡印刷进度」同名',pri:2,tags:['星豆社','好评卡'],done:true,subs:['跟彬彬确认打包方式','随抖音包裹投放节奏']},
+    {seed:'xdw-72',listId:'xingdou_week',title:'[#72] 忙忙碌碌寻宝藏整理发货',note:'已到货，前台拿货→打包→发出',pri:2,tags:['星豆社','忙忙碌碌','发货'],done:true,subs:[]},
+    {seed:'xdw-73',listId:'xingdou_week',title:'[#73] 山河行上架',note:'素材已拿，商品上架完毕(录入/审核/前台可见)；用户2026-10-13确认完成',pri:2,tags:['星豆社','山河行','上架'],done:true,subs:[]},
+    {seed:'xdw-74',listId:'xingdou_week',title:'[#74] 逐玉2 二级市场回收 20单',note:'周目标摊每天；⚠️与IP运营「确认逐玉2二级市场是否继续」同名，本周为执行回收',pri:2,tags:['星豆社','逐玉2','回收'],subs:['今日先开张几单','摊到本周每天']},
+    {seed:'xdw-75',listId:'xingdou_week',title:'[#75] 官卡封面定稿确认',note:'发布小红书前置；v2(渐变420/logo140px)待确认',pri:1,tags:['星豆社','封面'],subs:[]},
+    {seed:'xdw-76',listId:'xingdou_week',title:'[#76] 爆款笔记拆解→可复制模板',note:'把712阅读/59单爆款拆成标题公式+结构+钩子',pri:1,tags:['星豆社','小红书','爆款'],subs:[]},
+    {seed:'xdw-77',listId:'xingdou_week',title:'[#77] 企微星豆君承接话术',note:'⚠️与星豆社「企微星豆君账号分层」同名，本周为话术定稿；2026-10-13已出话术草案(桌面/星豆社_待办规划_77-78-89.html)',pri:2,tags:['星豆社','企微','话术'],subs:['欢迎语','首句钩子','新客/老客/沉睡分层','自动回复']},
+    {seed:'xdw-78',listId:'xingdou_week',title:'[#78] 渠道来源标签机制',note:'打破单点依赖数据基建；卡开发；2026-10-13已出机制+字段提需方案(桌面/星豆社_待办规划_77-78-89.html)，短期活码方案本周可做',pri:3,tags:['星豆社','数据'],subs:['出机制方案','字段设计(小红书/好评卡/老客/自然/抖音)']},
+    {seed:'xdw-79',listId:'xingdou_week',title:'[#79] 集采模块收尾推进',note:'⚠️与集采分销清单多项重叠，本周整理待拍板清单',pri:3,tags:['星豆社','集采'],subs:['MOQ/分级/返点待拍板','招商手册等范总意见']},
+    {seed:'xdw-80',listId:'xingdou_week',title:'[#80] 忙忙碌碌抽卡机上架',note:'已问星凯完成；⚠️星豆社清单已有同名项',pri:0,tags:['星豆社','忙忙碌碌','抽卡机'],done:true,subs:[]},
+    {seed:'xdw-81',listId:'xingdou_week',title:'[#81] 企微/小红书账号注册',note:'⚠️星豆社清单已有「小红书/企微账号注册(已完成)」',pri:0,tags:['星豆社','账号'],done:true,subs:[]},
+    {seed:'xdw-82',listId:'xingdou_week',title:'[#82] 联想渠道认证(范总手持身份证)',note:'已向范总要照',pri:2,tags:['星豆社','认证'],done:true,subs:[]},
+    {seed:'xdw-83',listId:'xingdou_week',title:'[#83] 苹果开发者账号跟进注册',note:'确认进度/待补材料/费用',pri:2,tags:['星豆社','开发者'],subs:[]},
+    {seed:'xdw-84',listId:'xingdou_week',title:'[#84] 增加支付渠道·星凯评估工时及费用',note:'⚠️与星豆社支付项重叠，本周催星凯出评估',pri:2,tags:['星豆社','支付'],subs:[]},
+    {seed:'xdw-85',listId:'xingdou_week',title:'[#85] 生成方向2/3/5带钩子版8篇',note:'封面+手机/电脑壁纸+文案已交付',pri:1,tags:['星豆社','小红书','钩子'],done:true,subs:[]},
+    {seed:'xdw-86',listId:'xingdou_week',title:'[#86] 山河行小红书预热',note:'商品上架前/同期造势引流(关联#73)',pri:2,tags:['星豆社','山河行','小红书'],subs:[]},
+    {seed:'xdw-87',listId:'xingdou_week',title:'[#87] 山河行抽卡机上架',note:'配置/审核/前台可见(关联#80另一系列)',pri:2,tags:['星豆社','山河行','抽卡机'],subs:[]},
+    {seed:'xdw-88',listId:'xingdou_week',title:'[#88] 忙忙碌碌寻宝藏库存盘点',note:'盘点表已交付(桌面/库存盘点表.xlsx，242 SKU)；用户2026-10-13确认完成',pri:2,tags:['星豆社','忙忙碌碌','库存'],done:true,subs:[]},
+    {seed:'xdw-89',listId:'xingdou_week',title:'[#89] 活动方案策划(小红书/积分/新人卡券)',note:'三类活动：小红书互动(三层钩子:关注评论抽普卡/加群抽普卡/注册送首抽)+积分兑换+新人卡券；2026-10-13已出三活动策划(桌面/星豆社_待办规划_77-78-89.html)，小红书互动本周可跑',pri:2,tags:['星豆社','活动'],subs:['小红书活动(三层钩子)','积分兑换','新人卡券']},
+    {seed:'xdw-90',listId:'xingdou_week',title:'[#90] 小程序子账号开通',note:'运营/客服/财务角色权限',pri:1,tags:['星豆社','账号'],subs:[]},
+    {seed:'xdw-91',listId:'xingdou_week',title:'[#91] 星豆社财务对接群',note:'对接公司财务(结算/对账/回款)',pri:1,tags:['星豆社','财务'],subs:[]},
+    {seed:'xdw-92',listId:'xingdou_week',title:'[#92] 星豆社名称统一',note:'各渠道对外名称规范(星豆社/星豆/星豆君混用)',pri:1,tags:['星豆社','品牌'],subs:[]},
+  ];
+  function todayStr(){
+    const d=new Date();
+    const p=n=>(n<10?'0':'')+n;
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+  }
+  function uid(){return Math.random().toString(36).slice(2,9);}
+
+  // 删除墓碑：用户主动删过的清单/种子任务，永不再自动补回
+  // 存在 state._rm = {lists:[id], seeds:[seed]}；换设备或清缓存后仍生效（随云端同步）
+  function rmBag(s){if(!s._rm||typeof s._rm!=='object')s._rm={lists:[],seeds:[]};
+    if(!Array.isArray(s._rm.lists))s._rm.lists=[];
+    if(!Array.isArray(s._rm.seeds))s._rm.seeds=[];
+    return s._rm;}
+  function isListRemoved(s,id){return rmBag(s).lists.indexOf(id)>=0;}
+  function isSeedRemoved(s,seed){return rmBag(s).seeds.indexOf(seed)>=0;}
+  function markListRemoved(id){
+    const bag=rmBag(state);
+    if(bag.lists.indexOf(id)<0)bag.lists.push(id);
+    // 立刻清掉墓碑里的种子任务，防止下次又补回来
+    const rmSeeds=SEEDS.filter(d=>d.listId===id).map(d=>d.seed);
+    rmSeeds.forEach(sd=>{if(bag.seeds.indexOf(sd)<0)bag.seeds.push(sd);});
+  }
+
+  function seedTasks(s){
+    if(!Array.isArray(s.tasks))s.tasks=[];
+    const have=new Set(s.tasks.map(t=>t.seed).filter(Boolean));
+    let changed=false;
+    SEEDS.forEach((d,i)=>{
+      if(have.has(d.seed))return;
+      if(isSeedRemoved(s,d.seed))return;// 用户删过，别再补
+      if(isListRemoved(s,d.listId))return;      // 所属清单被删，任务不补
+      s.tasks.push({
+        id:uid(),seed:d.seed,listId:d.listId,title:d.title,note:d.note||'',
+        pri:d.pri||0,tags:d.tags||[],done:d.done||false,
+        subs:(d.subs||[]).map(x=>({text:x,done:false})),
+        due:(d.due!==undefined?d.due:todayStr()),created:Date.now()+i,order:0
+      });
+      changed=true;
+    });
+    return changed;
+  }
+  // 统一补种入口：补齐清单 + 补齐 seed 任务
+  function ensureSeeds(obj){
+    const s=obj||state;
+    let changed=false;
+    if(!Array.isArray(s.lists)){s.lists=[];changed=true;}
+    DEFAULT_LISTS.forEach(d=>{
+      if(isListRemoved(s,d.id))return;// 用户删过，尊重用户意图
+      if(!s.lists.some(x=>x.id===d.id)){
+        //插在还款计划之前，保持还款始终排在最后
+        s.lists.splice(Math.max(0,s.lists.length-1),0,{id:d.id,name:d.name});
+        changed=true;
+      }
+    });
+    if(seedTasks(s))changed=true;
+    return changed;
+  }
+
+  state=load();
+
+  function load(){
+    let s=null;
+    try{const raw=JSON.parse(localStorage.getItem(KEY));if(raw&&raw.tasks)s=raw;}catch(e){}
+    if(!s){s={lists:DEFAULT_LISTS.map(x=>Object.assign({},x)),tasks:fullData()};}
+    ensureSeeds(s);
+    return s;
+  }
+  function save(){localStorage.setItem(KEY,JSON.stringify(state));if(cloudOK&&!syncing)pushCloud();}
+
+  // 完整清单数据（星豆社专项 + 四摊 + 9笔还款）
+  function fullData(){
+    const due='2026-10-25';
+    const T=[
+      // —— 星豆社 ——
+      {listId:'xingdou',title:'小程序本周内上线（最高优先级）',note:'私域KPI=注册数+成交额，私域用企微承接',pri:3,tags:['星豆社','上线'],done:false,subs:[]},
+      {listId:'xingdou',title:'企微「星豆君」账号分层 + 老客唤醒策略',note:'私域承接主号',pri:2,tags:['星豆社','私域','企微'],done:false,subs:[]},
+      {listId:'xingdou',title:'小红书运营手机 + 内容启动',note:'账号已注册(167号)，运营手机与内容运营到位',pri:2,tags:['小红书'],done:false,subs:[]},
+      {listId:'xingdou',title:'微信支付账号（支付测试 + 销售统计）',pri:2,tags:['支付'],done:false,subs:[]},
+      {listId:'xingdou',title:'好评卡印刷下单（90×54mm 已定稿）',note:'设计稿已定稿，待印刷下单',pri:2,tags:['好评卡'],done:false,subs:[]},
+      {listId:'xingdou',title:'新人券包 / 积分规则 / 通行证方案落地配置',pri:2,tags:['星豆社','配置'],done:false,subs:[]},
+      {listId:'xingdou',title:'修订版招商手册（待爱奇艺审核）',note:'等爱奇艺审核是否需修改',pri:1,tags:['IP','招商'],done:false,subs:[]},
+      {listId:'xingdou',title:'传统电商运营招聘需求（自己兼任，不招聘）',pri:0,tags:['招聘'],done:true,subs:[]},
+      {listId:'xingdou',title:'小程序验收/上架（6 IP 已上架）',pri:0,tags:['上架'],done:true,subs:[]},
+      {listId:'xingdou',title:'电商工作交接（已交接）',pri:0,tags:['交接'],done:true,subs:[]},
+      {listId:'xingdou',title:'小红书/企微账号注册（已完成）',pri:0,tags:['账号'],done:true,subs:[]},
+      {listId:'xingdou',title:'小程序内容填充（已填 4/9）',note:'余5项:新人礼包/抽卡机/弹窗广告/BANNER/拉新任务',pri:1,tags:['内容'],done:false,subs:[]},
+      {listId:'xingdou',title:'忙忙碌碌寻宝藏·抽卡机上架',note:'找星凯问配置流程',pri:2,tags:['抽卡机','宣发'],done:false,subs:[]},
+      {listId:'xingdou',title:'忙忙碌碌寻宝藏·宣发（4 平台）',pri:2,tags:['宣发'],done:false,subs:[]},
+      {listId:'xingdou',title:'忙忙碌碌寻宝藏 IP 宣发确认（范总已确认共用改名）',pri:0,tags:['宣发'],done:true,subs:[]},
+      {listId:'xingdou',title:'小程序结算周期（C端/平台）',note:'需老板确认，区别于集采T+30',pri:3,tags:['结算'],done:false,subs:[]},
+      {listId:'xingdou',title:'通联支付开户',note:'接续集采结算缩短T+30',pri:2,tags:['支付'],done:false,subs:[]},
+      {listId:'xingdou',title:'收集 App 开发清单',pri:2,tags:['App'],done:false,subs:[]},
+      {listId:'xingdou',title:'确认小程序三方支付费用和开发周期',pri:2,tags:['支付'],done:false,subs:[]},
+      {listId:'xingdou',title:'小红书店铺注册（企业店资质）',note:'账号已注册，需营业执照/品牌授权开企业店',pri:1,tags:['小红书','店铺'],done:false,subs:[]},
+      {listId:'xingdou',title:'雀骨 逐玉二级市场调研（已由IP运营「确认是否继续」承接）',note:'调研卡牌流转/交易可行性；下一步决策已移到 IP运营 清单',pri:0,tags:['调研'],done:true,subs:[]},
+      // —— 私域运营 ——
+      {listId:'siyu',title:'私域运营四件套（01-04）落地执行',note:'小红书模板/企微话术/抽卡玩法/SOP骨架',pri:2,tags:['私域'],done:false,subs:[]},
+      {listId:'siyu',title:'《私域玩法借鉴清单》落地',note:'磁盘暂无独立文件，需确认/新建',pri:1,tags:['私域'],done:false,subs:[]},
+      {listId:'siyu',title:'货架电商协同框架搭起来',note:'接手公司已有货架电商运营',pri:2,tags:['私域','货架'],done:false,subs:[]},
+      // —— 集采分销 ——
+      {listId:'jicai',title:'招商政策手册 v1.1 已出，推进招商（5维评分）',note:'资金30/规模25/配合15/采购结构15/合作深度15',pri:2,tags:['集采','招商'],done:false,subs:[]},
+      {listId:'jicai',title:'ToB 端小程序功能需求',note:'等招商手册确认后优化细节',pri:2,tags:['集采','需求'],done:false,subs:[]},
+      {listId:'jicai',title:'微信支付结算周期·集采渠道',note:'需范总确认加三方渠道缩短T+30',pri:3,tags:['集采','结算'],done:false,subs:[]},
+      // —— 拾色副业 ——
+      {listId:'shise',title:'H5 商城 demo 上架商品（已有 top100 清单）',note:'艳奎分销top100，剔除内衣/男用',pri:2,tags:['拾色','副业'],done:false,subs:[]},
+      {listId:'shise',title:'规划升级节点（月销几百单+转个体户/微信小店）',note:'个人码风控/税务天花板需提前规划',pri:1,tags:['拾色','副业'],done:false,subs:[]},
+      // —— 还款计划（逐月·每月25日·加速版，源数据见 repay-plan-40460.app.workbuddy.host）——
+      {listId:'huankuan',title:'💰 月度还款总览（2026-10 → 2029-06，共 33 期）',note:'负债合计¥157,729.41｜资产¥796.81｜净资产-¥156,932.60｜月薪6,000｜10/11月不留生活费、12月起留¥1,000｜月还约¥5,000(12月起)｜每月25日还款｜预计2029-06(33个月)全部还清本金(不计息)｜规则：潘杰3000/月(1-5月)·借呗首月全清·分付首月88.98次月清·招行765/月(1-27月)后5000/月·建行次月全清·招联第3月起2000/月(加速期增)·物业第3月起500/月·房贷总欠款¥10,000(分摊多期还·非月供)·张仪2028-06加速首月清｜逐月明细见下方各月度任务',pri:3,tags:['还款','总览'],done:false,subs:[]},
+      {"listId":"huankuan","title":"💸 2026-10 还款（合计¥6,053.98）","note":"生活费(非还款)：742.83｜当月还款合计：6,053.98｜月末剩余负债：151,675.43","pri":3,"tags":["还款","2026-10"],"done":false,"subs":[{"text":"潘杰 ¥3,000.00","done":false},{"text":"借呗 ¥2,200.00","done":false},{"text":"分付 ¥88.98","done":false},{"text":"招行信用卡 ¥765.00","done":false}],"due":"2026-10-25"},
+      {"listId":"huankuan","title":"💸 2026-11 还款（合计¥5,879.02）","note":"生活费(非还款)：120.98｜当月还款合计：5,879.02｜月末剩余负债：145,796.41","pri":3,"tags":["还款","2026-11"],"done":false,"subs":[{"text":"潘杰 ¥3,000.00","done":false},{"text":"分付 ¥1,114.02","done":false},{"text":"招行信用卡 ¥765.00","done":false},{"text":"建行信用卡 ¥1,000.00","done":false}],"due":"2026-11-25"},
+      {"listId":"huankuan","title":"💸 2026-12 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：140,796.41","pri":3,"tags":["还款","2026-12"],"done":false,"subs":[{"text":"潘杰 ¥3,000.00","done":false},{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥735.00","done":false},{"text":"物业费 ¥500.00","done":false}],"due":"2026-12-25"},
+      {"listId":"huankuan","title":"💸 2027-01 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：135,796.41","pri":3,"tags":["还款","2027-01"],"done":false,"subs":[{"text":"潘杰 ¥3,000.00","done":false},{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥735.00","done":false},{"text":"物业费 ¥500.00","done":false}],"due":"2027-01-25"},
+      {"listId":"huankuan","title":"💸 2027-02 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：130,796.41","pri":3,"tags":["还款","2027-02"],"done":false,"subs":[{"text":"潘杰 ¥1,000.00","done":false},{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"物业费 ¥500.00","done":false},{"text":"房贷 ¥735.00","done":false}],"due":"2027-02-25"},
+      {"listId":"huankuan","title":"💸 2027-03 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：125,796.41","pri":3,"tags":["还款","2027-03"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"物业费 ¥500.00","done":false},{"text":"房贷 ¥1,735.00","done":false}],"due":"2027-03-25"},
+      {"listId":"huankuan","title":"💸 2027-04 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：120,796.41","pri":3,"tags":["还款","2027-04"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"物业费 ¥500.00","done":false},{"text":"房贷 ¥1,735.00","done":false}],"due":"2027-04-25"},
+      {"listId":"huankuan","title":"💸 2027-05 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：115,796.41","pri":3,"tags":["还款","2027-05"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"物业费 ¥500.00","done":false},{"text":"房贷 ¥1,735.00","done":false}],"due":"2027-05-25"},
+      {"listId":"huankuan","title":"💸 2027-06 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：110,796.41","pri":3,"tags":["还款","2027-06"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"房贷 ¥2,235.00","done":false}],"due":"2027-06-25"},
+      {"listId":"huankuan","title":"💸 2027-07 还款（合计¥4,590.00）","note":"生活费(非还款)：1,410.00｜当月还款合计：4,590.00｜月末剩余负债：106,206.41","pri":3,"tags":["还款","2027-07"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"房贷 ¥1,825.00","done":false}],"due":"2027-07-25"},
+      {"listId":"huankuan","title":"💸 2027-08 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：101,206.41","pri":3,"tags":["还款","2027-08"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2027-08-25"},
+      {"listId":"huankuan","title":"💸 2027-09 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：96,206.41","pri":3,"tags":["还款","2027-09"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2027-09-25"},
+      {"listId":"huankuan","title":"💸 2027-10 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：91,206.41","pri":3,"tags":["还款","2027-10"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2027-10-25"},
+      {"listId":"huankuan","title":"💸 2027-11 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：86,206.41","pri":3,"tags":["还款","2027-11"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2027-11-25"},
+      {"listId":"huankuan","title":"💸 2027-12 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：81,206.41","pri":3,"tags":["还款","2027-12"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2027-12-25"},
+      {"listId":"huankuan","title":"💸 2028-01 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：76,206.41","pri":3,"tags":["还款","2028-01"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2028-01-25"},
+      {"listId":"huankuan","title":"💸 2028-02 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：71,206.41","pri":3,"tags":["还款","2028-02"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2028-02-25"},
+      {"listId":"huankuan","title":"💸 2028-03 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：66,206.41","pri":3,"tags":["还款","2028-03"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2028-03-25"},
+      {"listId":"huankuan","title":"💸 2028-04 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：61,206.41","pri":3,"tags":["还款","2028-04"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2028-04-25"},
+      {"listId":"huankuan","title":"💸 2028-05 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：56,206.41","pri":3,"tags":["还款","2028-05"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥2,000.00","done":false},{"text":"张仪 ¥2,235.00","done":false}],"due":"2028-05-25"},
+      {"listId":"huankuan","title":"💸 2028-06 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：51,206.41","pri":3,"tags":["还款","2028-06"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥3,585.00","done":false},{"text":"张仪 ¥650.00","done":false}],"due":"2028-06-25"},
+      {"listId":"huankuan","title":"💸 2028-07 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：46,206.41","pri":3,"tags":["还款","2028-07"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥4,235.00","done":false}],"due":"2028-07-25"},
+      {"listId":"huankuan","title":"💸 2028-08 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：41,206.41","pri":3,"tags":["还款","2028-08"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥4,235.00","done":false}],"due":"2028-08-25"},
+      {"listId":"huankuan","title":"💸 2028-09 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：36,206.41","pri":3,"tags":["还款","2028-09"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥4,235.00","done":false}],"due":"2028-09-25"},
+      {"listId":"huankuan","title":"💸 2028-10 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：31,206.41","pri":3,"tags":["还款","2028-10"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥4,235.00","done":false}],"due":"2028-10-25"},
+      {"listId":"huankuan","title":"💸 2028-11 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：26,206.41","pri":3,"tags":["还款","2028-11"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥4,235.00","done":false}],"due":"2028-11-25"},
+      {"listId":"huankuan","title":"💸 2028-12 还款（合计¥922.64）","note":"生活费(非还款)：5,077.36｜当月还款合计：922.64｜月末剩余负债：25,283.77","pri":3,"tags":["还款","2028-12"],"done":false,"subs":[{"text":"招行信用卡 ¥765.00","done":false},{"text":"招联金融 ¥157.64","done":false}],"due":"2028-12-25"},
+      {"listId":"huankuan","title":"💸 2029-01 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：20,283.77","pri":3,"tags":["还款","2029-01"],"done":false,"subs":[{"text":"招行信用卡 ¥5,000.00","done":false}],"due":"2029-01-25"},
+      {"listId":"huankuan","title":"💸 2029-02 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：15,283.77","pri":3,"tags":["还款","2029-02"],"done":false,"subs":[{"text":"招行信用卡 ¥5,000.00","done":false}],"due":"2029-02-25"},
+      {"listId":"huankuan","title":"💸 2029-03 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：10,283.77","pri":3,"tags":["还款","2029-03"],"done":false,"subs":[{"text":"招行信用卡 ¥5,000.00","done":false}],"due":"2029-03-25"},
+      {"listId":"huankuan","title":"💸 2029-04 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：5,283.77","pri":3,"tags":["还款","2029-04"],"done":false,"subs":[{"text":"招行信用卡 ¥5,000.00","done":false}],"due":"2029-04-25"},
+      {"listId":"huankuan","title":"💸 2029-05 还款（合计¥5,000.00）","note":"生活费(非还款)：1,000.00｜当月还款合计：5,000.00｜月末剩余负债：283.77","pri":3,"tags":["还款","2029-05"],"done":false,"subs":[{"text":"招行信用卡 ¥5,000.00","done":false}],"due":"2029-05-25"},
+      {"listId":"huankuan","title":"💸 2029-06 还款（合计¥283.77）","note":"生活费(非还款)：5,716.23｜当月还款合计：283.77｜月末剩余负债：0.00","pri":3,"tags":["还款","2029-06"],"done":false,"subs":[{"text":"招行信用卡 ¥283.77","done":false}],"due":"2029-06-25"},
+      {listId:'huankuan',title:'🚀 还款加速期启动（2028-06 起）',note:'前面优先债已清：招行维持¥765/月、张仪尾款首月全清、招联拿剩余优先还；招联清后每月¥5,000全砸招行｜预计2029-06全部还清(33个月)',pri:3,tags:['还款','加速'],done:false,subs:[],due:'2028-06-25'},
+    ];
+    const t=Date.now();
+    return T.map((x,i)=>({id:uid(),due:due,created:t+i,order:i,...x}));
+  }
+
+  // ---------- 过滤 ----------
+  function isToday(s){return s===new Date().toISOString().slice(0,10);}
+  function visibleTasks(){
+    let arr=state.tasks.slice();
+    if(curList==='today') arr=arr.filter(t=>!t.done && t.due && isToday(t.due));
+    else if(curList==='upcoming') arr=arr.filter(t=>!t.done && t.due && t.due>new Date().toISOString().slice(0,10));
+    else if(curList==='inbox') arr=arr.filter(t=>!t.done);
+    else if(curList==='completed') arr=arr.filter(t=>t.done);
+    else if(curList==='day') arr=arr.filter(t=>!t.done && t.due===curDay);
+    else arr=arr.filter(t=>t.listId===curList && !t.done);
+    if(keyword){
+      const k=keyword.toLowerCase();
+      arr=arr.filter(t=>(t.title+t.note+(t.tags||[]).join(',')).toLowerCase().includes(k));
+    }
+    const pr={3:0,2:1,1:2,0:3};
+    arr.sort((a,b)=>{
+      if(curList!=='completed' && a.listId===b.listId && a.order!=null && b.order!=null) return a.order-b.order;
+      return (a.done-b.done) || (pr[b.pri]-pr[a.pri]) || ((a.due||'9999').localeCompare(b.due||'9999')) || (b.created-a.created);
+    });
+    return arr;
+  }
+  function countFor(id){
+    if(id==='today') return state.tasks.filter(t=>!t.done&&t.due&&isToday(t.due)).length;
+    if(id==='upcoming') return state.tasks.filter(t=>!t.done&&t.due&&t.due>new Date().toISOString().slice(0,10)).length;
+    if(id==='inbox') return state.tasks.filter(t=>!t.done).length;
+    if(id==='completed') return state.tasks.filter(t=>t.done).length;
+    return state.tasks.filter(t=>t.listId===id&&!t.done).length;
+  }
+
+  // ---------- 渲染 ----------
+  function render(){
+    document.getElementById('smartNav').innerHTML=SMART.map(s=>`
+      <div class="nav-item ${curList===s.id?'active':''}" data-list="${s.id}">
+        <span class="ico">${s.ico}</span><span>${s.name}</span>
+        <span class="cnt">${countFor(s.id)}</span>
+      </div>`).join('');
+    document.getElementById('customNav').innerHTML=state.lists.map(l=>`
+      <div class="nav-item ${curList===l.id?'active':''}" data-list="${l.id}">
+        <span class="ico">📁</span><span>${esc(l.name)}</span>
+        <span class="cnt">${countFor(l.id)}</span>
+        <span class="ren" data-rename="${l.id}" title="重命名">✎</span>
+        <span class="del" data-del="${l.id}" title="删除">🗑</span>
+      </div>`).join('');
+    const all=[...SMART,...state.lists];
+    const cur=all.find(x=>x.id===curList);
+    const title=cur?cur.name:(curList==='day'?(curDay+' 当日任务'):'清单');
+    document.getElementById('listTitle').textContent=title;
+
+    // 看板视图下给外层容器打标记，让 .board 独占横向滚动
+    document.querySelector('.content').classList.toggle('board-mode',view==='board');
+    if(view==='calendar'){renderCalendar();return;}
+    if(view==='board'){renderBoard();return;}
+
+    // 列表视图
+    document.getElementById('addBar').style.display='';
+    const total=visibleTasks().length;
+    document.getElementById('listSub').textContent=keyword?`“${keyword}” 匹配 ${total} 项`:`共 ${total} 项`;
+    const tasks=visibleTasks();
+    const area=document.getElementById('taskArea');
+    if(!tasks.length){
+      area.innerHTML=`<div class="empty"><div class="big">🗒️</div>${keyword?'没有匹配的任务':'这个清单还是空的，添加第一个任务吧'}</div>`;
+      return;
+    }
+    if(curList!=='completed'&&curList!=='day'){
+      const groups={};
+      tasks.forEach(t=>{
+        const k=t.due? (isToday(t.due)?'今天':t.due) : '无日期';
+        (groups[k]=groups[k]||[]).push(t);
+      });
+      const order=Object.keys(groups).sort((a,b)=>{
+        if(a==='今天')return -1;if(b==='今天')return 1;
+        if(a==='无日期')return 1;if(b==='无日期')return -1;
+        return a.localeCompare(b);
+      });
+      area.innerHTML=order.map(g=>`
+        <div class="date-head">${g==='今天'?'📅 今天':g==='无日期'?'📁 无日期':('📆 '+g)}<span class="d-sub">${groups[g].length} 项</span></div>
+        ${groups[g].map(taskHTML).join('')}
+      `).join('');
+    }else{
+      area.innerHTML=tasks.map(taskHTML).join('');
+    }
+  }
+
+  function taskHTML(t){
+    const subs=(t.subs||[]);
+    const doneSub=subs.filter(s=>s.done).length;
+    const subHTML=subs.length?`<span class="sub-prog">☑ ${doneSub}/${subs.length}</span>`:'';
+    const derivedDone=subs.length?subs.every(s=>s.done):t.done;
+    const dueOver=t.due&&!derivedDone&&t.due<new Date().toISOString().slice(0,10);
+    const dueTxt=t.due?`<span class="chip due ${dueOver?'over':''}">📅 ${t.due}${dueOver?' 逾期':''}</span>`:'';
+    const priTxt=t.pri>0?`<span class="chip pri p${t.pri}"><span class="p"></span>${['','低','中','高'][t.pri]}</span>`:'';
+    const tagHTML=(t.tags||[]).map(x=>`<span class="chip tag">#${esc(x)}</span>`).join('');
+    const noteHTML=t.note?`<div class="task-meta"><span class="chip">📝 ${esc(t.note)}</span></div>`:'';
+    const subListHTML=subs.length?`<div class="sublist">${subs.map((s,i)=>`<div class="sub ${s.done?'on':''}" data-sub="${t.id}|${i}"><span class="sub-chk"></span><span class="sub-txt">${esc(s.text)}</span></div>`).join('')}</div>`:'';
+    return `<div class="task ${derivedDone?'done':''}" draggable="true" data-id="${t.id}">
+      <div class="check" data-check="${t.id}"></div>
+      <div class="task-body">
+        <div class="task-title">${esc(t.title)}</div>
+        <div class="task-meta">${priTxt}${dueTxt}${subHTML}${tagHTML}</div>
+        ${noteHTML}
+        ${subListHTML}
+      </div>
+    </div>`;
+  }
+
+  // ---------- 日历视图 ----------
+  function renderCalendar(){
+    document.getElementById('addBar').style.display='none';
+    const [y,m]=curMonth.split('-').map(Number);
+    const first=new Date(y,m-1,1);
+    const startIdx=(first.getDay()+6)%7; // 周一为起点
+    const daysInMonth=new Date(y,m,0).getDate();
+    const prevDays=new Date(y,m-1,0).getDate();
+    const dows=['一','二','三','四','五','六','日'];
+    const todayStr=new Date().toISOString().slice(0,10);
+    let cells=[];
+    // 上月补
+    for(let i=startIdx-1;i>=0;i--){
+      const d=`${y}-${String(m-1).padStart(2,'0')}-${String(prevDays-i).padStart(2,'0')}`;
+      cells.push(calCell(d,true,todayStr));
+    }
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      cells.push(calCell(ds,false,todayStr));
+    }
+    // 下月补满 6 行
+    const total=startIdx+daysInMonth;
+    const rem=(7-(total%7))%7;
+    for(let i=1;i<=rem;i++){
+      const nd=new Date(y,m,0); // 下月
+      const ny=y, nm=m+1;
+      const ds=`${nm>12?ny+1:ny}-${String(nm>12?1:nm).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+      cells.push(calCell(ds,true,todayStr));
+    }
+    const area=document.getElementById('taskArea');
+    area.innerHTML=`
+      <div class="cal-head">
+        <span class="cal-nav" id="calPrev">‹</span>
+        <h2>${y} 年 ${m} 月</h2>
+        <span class="cal-nav" id="calNext">›</span>
+      </div>
+      <div class="cal-grid">
+        ${dows.map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+        ${cells.join('')}
+      </div>
+      <div class="day-list-head" id="dayListHead">📌 ${curDay} 当天任务</div>
+      <div id="dayListArea"></div>
+    `;
+    document.getElementById('listSub').textContent='';
+    document.getElementById('calPrev').onclick=()=>{curMonth=prevMonth(curMonth);render();};
+    document.getElementById('calNext').onclick=()=>{curMonth=nextMonth(curMonth);render();};
+    area.querySelectorAll('.cal-cell').forEach(c=>{
+      c.onclick=()=>{curDay=c.dataset.date;render();};
+    });
+    renderDayList();
+  }
+  function calCell(date,other,todayStr){
+    const [y,m,d]=date.split('-').map(Number);
+    const tasks=state.tasks.filter(t=>!t.done&&t.due===date);
+    const dots=tasks.slice(0,3).map(t=>{
+      const cls=t.pri>=3?'hi':(t.pri>=2?'mid':'');
+      return `<div class="cal-dot ${cls}">${esc(t.title.length>10?t.title.slice(0,10)+'…':t.title)}</div>`;
+    }).join('') + (tasks.length>3?`<div class="cal-more">+${tasks.length-3} 更多</div>`:'');
+    const cls=[other?'other':'',date===todayStr?'today':'',date===curDay?'sel':''].filter(Boolean).join(' ');
+    return `<div class="cal-cell ${cls}" data-date="${date}">
+      <div class="cal-dnum">${d}</div>${dots}</div>`;
+  }
+  function prevMonth(ym){const[y,m]=ym.split('-').map(Number);return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;}
+  function nextMonth(ym){const[y,m]=ym.split('-').map(Number);return m===12?`${y+1}-01`:`${y}-${String(m+1).padStart(2,'0')}`;}
+  function renderDayList(){
+    const head=document.getElementById('dayListHead');
+    const wrap=document.getElementById('dayListArea');
+    if(!head||!wrap)return;
+    const tasks=state.tasks.filter(t=>!t.done&&t.due===curDay);
+    head.textContent=`📌 ${curDay} 当天任务（${tasks.length}）`;
+    wrap.innerHTML=tasks.length?tasks.map(taskHTML).join(''):`<div class="empty"><div class="big">🎉</div>这一天没有待办</div>`;
+  }
+
+  // ---------- 看板视图 ----------
+  function renderBoard(){
+    document.getElementById('addBar').style.display='none';
+    const area=document.getElementById('taskArea');
+    // 只渲染有未完成任务的清单，避免空列占位把版面撑乱
+    const lists=state.lists.filter(l=>state.tasks.some(t=>t.listId===l.id&&!t.done));
+    const cntOf=id=>state.tasks.filter(t=>t.listId===id&&!t.done).length;
+    const cols=lists.map((l,i)=>{
+      const ts=state.tasks.filter(t=>t.listId===l.id&&!t.done)
+        .sort((a,b)=>(b.pri-a.pri)||((a.due||'9999').localeCompare(b.due||'9999')));
+      const cards=ts.length?ts.map(taskHTML).join(''):`<div class="col-empty">拖拽任务到此处</div>`;
+      return `<div class="col" data-col="${l.id}" data-idx="${i}">
+        <div class="col-head"><span class="col-name">📁 ${esc(l.name)}</span><span class="c-cnt">${ts.length}</span></div>
+        <div class="col-body">${cards}</div>
+      </div>`;
+    }).join('');
+    const pills=lists.map((l,i)=>
+      `<button class="bn${i===0?' on':''}" data-idx="${i}">${esc(l.name)}<span class="n">${cntOf(l.id)}</span></button>`
+    ).join('');
+    area.innerHTML=lists.length
+      ? `<div class="bnav">
+           <button class="bnav-arrow" id="bPrev" aria-label="上一列">‹</button>
+           <div class="bnav-track" id="bTrack">${pills}</div>
+           <button class="bnav-arrow" id="bNext" aria-label="下一列">›</button>
+         </div>
+         <div class="board" id="board">${cols}</div>
+         <div class="board-hint">← 左右滑动 / 点上方清单名 / 点箭头 都能翻列 →</div>`
+      : `<div class="board-empty">🎉 当前没有未完成任务<br><span>所有清单都清空了，去「待办箱」看看</span></div>`;
+    document.getElementById('listSub').textContent=`共 ${state.lists.length} 个清单`;
+
+    const board=document.getElementById('board');
+    const track=document.getElementById('bTrack');
+    if(!board||!track)return;
+    const colEls=Array.from(board.querySelectorAll('.col'));
+    const bnEls=Array.from(track.querySelectorAll('.bn'));
+    const prev=document.getElementById('bPrev');
+    const next=document.getElementById('bNext');
+
+    // 列的左内边距（相对滚动内容）：用 rect 差值计算，不依赖 offsetParent，最稳
+    function colLeft(i){
+      const c=colEls[i];if(!c)return 0;
+      return board.scrollLeft+(c.getBoundingClientRect().left-board.getBoundingClientRect().left);
+    }
+    // 当前视口中心所在的列
+    function currentCol(){
+      const mid=board.scrollLeft+board.clientWidth/2;
+      let best=0;
+      colEls.forEach((c,i)=>{
+        const center=colLeft(i)+c.getBoundingClientRect().width/2;
+        if(Math.abs(center-mid)<Math.abs(colLeft(best)+colEls[best].getBoundingClientRect().width/2-mid))best=i;
+      });
+      return best;
+    }
+    function syncUI(){
+      const max=board.scrollWidth-board.clientWidth;
+      const s=board.scrollLeft;
+      prev.disabled=s<=1;
+      next.disabled=s>=max-1;
+      bnEls.forEach((b,i)=>b.classList.toggle('on',i===currentCol()));
+      // 让高亮的 pill 保持在导航条可视区内
+      const act=bnEls[currentCol()];
+      if(act){
+        const tW=track.clientWidth;
+        const off=act.offsetLeft-track.offsetLeft;
+        if(off<track.scrollLeft)track.scrollTo({left:Math.max(0,off-8),behavior:'smooth'});
+        else if(off+act.offsetWidth>track.scrollLeft+tW)
+          track.scrollTo({left:off+act.offsetWidth-tW+8,behavior:'smooth'});
+      }
+    }
+    function goCol(i,smooth){
+      if(!colEls[i])return;
+      board.scrollTo({left:Math.max(0,Math.min(colLeft(i),board.scrollWidth-board.clientWidth)),
+        behavior:smooth===false?'auto':'smooth'});
+      syncUI();
+    }
+    prev.onclick=()=>goCol(currentCol()-1);
+    next.onclick=()=>goCol(currentCol()+1);
+    bnEls.forEach(b=>{
+      b.onclick=()=>goCol(parseInt(b.dataset.idx,10));
+    });
+    // 手指滑动 / 拖滚动条 时同步箭头与高亮
+    let raf=0;
+    board.addEventListener('scroll',()=>{
+      if(raf)return;
+      raf=requestAnimationFrame(()=>{raf=0;syncUI();});
+    },{passive:true});
+    // 拖拽任务到列（桌面）
+    colEls.forEach(col=>{
+      col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('drag-over');});
+      col.addEventListener('dragleave',()=>col.classList.remove('drag-over'));
+      col.addEventListener('drop',e=>{
+        e.preventDefault();col.classList.remove('drag-over');
+        if(dragId){moveToList(dragId,col.dataset.col);}
+      });
+    });
+    syncUI();
+  }
+  function moveToList(id,newList){
+    const t=state.tasks.find(x=>x.id===id);if(!t)return;
+    if(t.listId===newList)return;
+    t.listId=newList;
+    const sameList=state.tasks.filter(x=>x.listId===newList&&!x.done);
+    sameList.forEach((x,i)=>x.order=i);
+    save();render();
+  }
+
+  function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+  // ---------- 拖拽（列表视图重排）----------
+  function reorderInList(targetId,before){
+    const ids=visibleTasks().filter(t=>t.listId===curList||curList==='inbox'||curList==='today'||curList==='upcoming'||curList==='day').map(t=>t.id);
+    if(!ids.includes(dragId))return;
+    const from=ids.indexOf(dragId);ids.splice(from,1);
+    let to=ids.indexOf(targetId);
+    if(to<0)to=ids.length;
+    if(!before)to++;
+    ids.splice(to,0,dragId);
+    const map={};ids.forEach((id,i)=>map[id]=i);
+    state.tasks.forEach(t=>{if(map[t.id]!=null)t.order=map[t.id];});
+    save();render();
+  }
+  document.addEventListener('dragstart',e=>{
+    const t=e.target.closest('.task');
+    if(t){dragId=t.dataset.id;t.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+  });
+  document.addEventListener('dragend',e=>{
+    const t=e.target.closest('.task');if(t)t.classList.remove('dragging');
+    document.querySelectorAll('.task.drag-over').forEach(x=>x.classList.remove('drag-over'));
+    dragId=null;
+  });
+  document.addEventListener('dragover',e=>{
+    if(!dragId)return;
+    const t=e.target.closest('.task');
+    if(t && view==='list'){e.preventDefault();}
+  });
+  document.addEventListener('drop',e=>{
+    if(!dragId||view!=='list')return;
+    const t=e.target.closest('.task');
+    if(t && t.dataset.id!==dragId){
+      const rect=t.getBoundingClientRect();
+      const before=(e.clientY-rect.top)<rect.height/2;
+      e.preventDefault();
+      reorderInList(t.dataset.id,before);
+    }
+  });
+
+  // ---------- 交互 ----------
+  document.body.addEventListener('click',e=>{
+    const nav=e.target.closest('.nav-item');
+    if(nav&&!e.target.dataset.del&&!e.target.dataset.rename){
+      curList=nav.dataset.list;keyword='';document.getElementById('searchInput').value='';
+      closeSidebar();render();return;
+    }
+    const ren=e.target.dataset.rename;
+    if(ren){const l=state.lists.find(x=>x.id===ren);if(l){
+      const n=prompt('修改清单名称：',l.name);
+      if(n&&n.trim()){l.name=n.trim();save();render();}}return;}
+    const del=e.target.dataset.del;
+    if(del){if(confirm('删除清单「'+(state.lists.find(l=>l.id===del)||{}).name+'」？其任务会移到待办箱')){
+      markListRemoved(del);
+      state.lists=state.lists.filter(l=>l.id!==del);
+      state.tasks.forEach(t=>{if(t.listId===del)t.listId='inbox';});
+      if(curList===del)curList='inbox';save();render();}return;}
+    const sub=e.target.closest('.sub');
+    if(sub){const [sid,si]=sub.dataset.sub.split('|');const t=state.tasks.find(x=>x.id===sid);
+      if(t){const i=+si;t.subs[i].done=!t.subs[i].done;
+        if(t.subs.length)t.done=t.subs.every(s=>s.done);
+        save();render();}return;}
+    const chk=e.target.dataset.check;
+    if(chk){const t=state.tasks.find(x=>x.id===chk);
+      if(t.subs&&t.subs.length){const all=t.subs.every(s=>s.done);t.subs.forEach(s=>s.done=!all);t.done=!all;}
+      else t.done=!t.done;
+      save();render();return;}
+    const vtab=e.target.dataset.view;
+    if(vtab){view=vtab;document.querySelectorAll('.vtab').forEach(x=>x.classList.toggle('active',x.dataset.view===vtab));render();return;}
+    const task=e.target.closest('.task');
+    if(task && !dragId){openModal(task.dataset.id);return;}
+  });
+
+  const qaInput=document.getElementById('quickAddInput');
+  function quickAdd(){
+    const v=qaInput.value.trim();if(!v)return;
+    const t={id:uid(),
+      listId:(curList==='completed'||curList==='today'||curList==='upcoming'||curList==='day')?'inbox':curList,
+      title:v,note:'',due:curList==='today'?new Date().toISOString().slice(0,10):'',pri:0,tags:[],done:false,subs:[],created:Date.now(),order:99999};
+    state.tasks.unshift(t);qaInput.value='';save();render();
+  }
+  document.getElementById('quickAddBtn').onclick=quickAdd;
+  qaInput.addEventListener('keydown',e=>{if(e.key==='Enter')quickAdd();});
+
+  document.getElementById('addListBtn').onclick=()=>{
+    const n=prompt('清单名称：');if(!n)return;
+    state.lists.push({id:uid(),name:n.trim()});save();render();
+  };
+  document.getElementById('resetBtn').onclick=()=>{
+    if(confirm('将用完整清单（星豆社/私域/集采/拾色/IP运营/还款）覆盖当前所有数据，确定？\n（会清空删除记录，被删过的清单和任务会全部回来）')){
+      state={lists:DEFAULT_LISTS.map(x=>Object.assign({},x)),tasks:fullData(),_rm:{lists:[],seeds:[]}};
+      ensureSeeds(state);
+      save();curList='xingdou';keyword='';view='list';curMonth=new Date().toISOString().slice(0,7);render();
+    }
+  };
+
+  document.getElementById('searchInput').addEventListener('input',e=>{keyword=e.target.value.trim();render();});
+
+  // ---------- 导入 / 导出 ----------
+  document.getElementById('exportBtn').onclick=()=>{
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='待办备份_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  };
+  document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
+  document.getElementById('importFile').addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const d=JSON.parse(r.result);
+        if(d&&Array.isArray(d.tasks)&&Array.isArray(d.lists)){
+          if(!confirm('导入将覆盖当前所有数据，确定？'))return;
+          state={lists:d.lists,tasks:d.tasks};ensureSeeds();save();curList='inbox';view='list';render();
+          alert('导入成功，共 '+d.tasks.length+' 条任务');
+        }else{alert('文件格式不正确（缺少 tasks/lists）');}
+      }catch(err){alert('解析失败：'+err.message);}
+    };
+    r.readAsText(f);
+    e.target.value='';
+  });
+
+  // ---------- 浏览器通知 ----------
+  function startNotifyCheck(){
+    checkNotify();
+    if(!window.__notifyTimer) window.__notifyTimer=setInterval(checkNotify,60*60*1000);
+  }
+  function checkNotify(){
+    if(!('Notification' in window)||Notification.permission!=='granted')return;
+    const today=new Date().toISOString().slice(0,10);
+    state.tasks.filter(t=>!t.done&&t.due===today).forEach(t=>{
+      try{new Notification('📅 待办提醒 · 今天到期',{body:t.title});}catch(e){}
+    });
+  }
+  document.getElementById('notifyBtn').onclick=()=>{
+    if(!('Notification' in window)){alert('当前浏览器不支持桌面通知');return;}
+    if(Notification.permission==='granted'){alert('提醒已开启，到期任务会每小时检查并弹窗');return;}
+    Notification.requestPermission().then(p=>{
+      if(p==='granted'){localStorage.setItem('notify_on','1');
+        document.getElementById('notifyBtn').classList.add('on');
+        document.getElementById('notifyBtn').textContent='🔔 已开启';
+        startNotifyCheck();alert('已开启桌面提醒');}
+      else alert('通知权限被拒绝，无法提醒');
+    });
+  };
+  if(localStorage.getItem('notify_on')==='1' && 'Notification' in window && Notification.permission==='granted'){
+    document.getElementById('notifyBtn').classList.add('on');
+    document.getElementById('notifyBtn').textContent='🔔 已开启';
+    startNotifyCheck();
+  }
+
+  // ---------- 弹窗 ----------
+  const mask=document.getElementById('mask');
+  function openModal(id){
+    editingId=id;const t=state.tasks.find(x=>x.id===id);if(!t)return;
+    draftSubs=(t.subs||[]).map(s=>({...s}));
+    document.getElementById('mTitle').value=t.title;
+    document.getElementById('mNote').value=t.note||'';
+    const sel=document.getElementById('mList');
+    sel.innerHTML=`<option value="inbox">待办箱</option>`+state.lists.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('');
+    sel.value=t.listId||'inbox';
+    document.getElementById('mDue').value=t.due||'';
+    document.getElementById('mPri').value=String(t.pri||0);
+    document.getElementById('mTags').value=(t.tags||[]).join(', ');
+    renderSubs();
+    mask.classList.add('show');
+  }
+  function renderSubs(){
+    document.getElementById('subList').innerHTML=draftSubs.map((s,i)=>`
+      <div class="sub-item ${s.done?'done':''}">
+        <span class="sc" data-si="${i}"></span><span>${esc(s.text)}</span>
+        <span style="margin-left:auto;cursor:pointer;color:#c4c9d0" data-rm="${i}">✕</span>
+      </div>`).join('');
+  }
+  document.getElementById('subList').addEventListener('click',e=>{
+    const si=e.target.dataset.si;if(si!==undefined){draftSubs[+si].done=!draftSubs[+si].done;renderSubs();return;}
+    const rm=e.target.dataset.rm;if(rm!==undefined){draftSubs.splice(+rm,1);renderSubs();}
+  });
+  const subInput=document.getElementById('subInput');
+  function addSub(){const v=subInput.value.trim();if(!v)return;draftSubs.push({text:v,done:false});subInput.value='';renderSubs();}
+  document.getElementById('subAddBtn').onclick=addSub;
+  subInput.addEventListener('keydown',e=>{if(e.key==='Enter')addSub();});
+
+  document.getElementById('saveBtn').onclick=()=>{
+    const t=state.tasks.find(x=>x.id===editingId);if(!t)return;
+    t.title=document.getElementById('mTitle').value.trim()||'未命名任务';
+    t.note=document.getElementById('mNote').value.trim();
+    t.listId=document.getElementById('mList').value;
+    t.due=document.getElementById('mDue').value;
+    t.pri=+document.getElementById('mPri').value;
+    t.tags=document.getElementById('mTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+    t.subs=draftSubs;if(draftSubs.length)t.done=draftSubs.every(s=>s.done);save();mask.classList.remove('show');render();
+  };
+  document.getElementById('cancelBtn').onclick=()=>mask.classList.remove('show');
+  document.getElementById('deleteBtn').onclick=()=>{
+    if(confirm('确定删除该任务？')){
+      // 种子任务被删后记墓碑，避免下次打开又被补回来
+      const t=state.tasks.find(x=>x.id===editingId);
+      if(t&&t.seed){const bag=rmBag(state);if(bag.seeds.indexOf(t.seed)<0)bag.seeds.push(t.seed);}
+      state.tasks=state.tasks.filter(x=>x.id!==editingId);save();mask.classList.remove('show');render();
+    }
+  };
+  mask.addEventListener('click',e=>{if(e.target===mask)mask.classList.remove('show');});
+
+  // ---------- 云同步（多端共享同一份数据）----------
+  const CLOUD_CFG={endpoint:'https://dida-list.app.workbuddy.host',publishableKey:'wbpk_e5XPYZ8FQif3xsUa85dxut_p1EDEWDZepwfp10O61llfh9hPgO2qh2g'};
+  let cloud=null,cloudOK=false,lastSync=+(localStorage.getItem('lastSync')||0),syncing=false;
+  function setCloudStatus(txt,on){const b=document.getElementById('cloudBtn');if(b){b.textContent=txt;if(on)b.classList.add('on');else b.classList.remove('on');}}
+  function initCloud(){
+    try{
+      if(typeof WorkBuddyCloud==='undefined'){setCloudStatus('☁ 离线',false);return;}
+      cloud=WorkBuddyCloud.createWorkBuddyCloud({endpoint:CLOUD_CFG.endpoint,publishableKey:CLOUD_CFG.publishableKey});
+      cloudOK=true;setCloudStatus('☁ 已同步',true);
+    }catch(e){cloudOK=false;setCloudStatus('☁ 离线',false);}
+  }
+  async function pushCloud(){
+    if(!cloudOK||syncing)return;
+    syncing=true;
+    try{
+      const {error}=await cloud.database.from('dida_board').upsert({id:'main',state:state,updated_at:new Date().toISOString()});
+      if(error){setCloudStatus('☁ 失败',false);}
+      else{lastSync=Date.now();localStorage.setItem('lastSync',String(lastSync));setCloudStatus('☁ 已同步',true);}
+    }catch(e){setCloudStatus('☁ 离线',false);}
+    syncing=false;
+  }
+  async function pullCloud(){
+    if(!cloudOK)return;
+    try{
+      const {data,error}=await cloud.database.from('dida_board').select('*').eq('id','main').maybeSingle();
+      if(error)return;
+      if(data&&data.state){
+        const remote=new Date(data.updated_at).getTime();
+        if(remote>(lastSync||0)){
+          state=data.state;
+          // 云端快照可能不含新清单/新任务，必须补种后再落盘，否则会被旧快照反复覆盖
+          ensureSeeds();
+          save();lastSync=remote;localStorage.setItem('lastSync',String(lastSync));
+          render();setCloudStatus('☁ 已同步',true);
+        }
+        else if((lastSync||0)>0&&remote<lastSync){pushCloud();}
+      }else{pushCloud();}
+    }catch(e){}
+  }
+  function bindCloudBtn(){
+    const b=document.getElementById('cloudBtn');
+    if(b)b.onclick=()=>{setCloudStatus('☁ 同步中…',false);pullCloud().then(()=>{if(cloudOK)pushCloud();});};
+  }
+  initCloud();bindCloudBtn();
+  if(cloudOK){pullCloud();setInterval(pullCloud,30000);}
+
+  // ---------- 移动端抽屉 ----------
+  function closeSidebar(){const sb=document.getElementById('sidebar');if(sb){sb.classList.remove('open');document.body.classList.remove('sidebar-open');}}
+  const hb=document.getElementById('hamburger');
+  if(hb)hb.onclick=()=>{const sb=document.getElementById('sidebar');sb.classList.toggle('open');document.body.classList.toggle('sidebar-open');};
+  document.body.addEventListener('click',e=>{
+    if(document.body.classList.contains('sidebar-open') && !e.target.closest('.sidebar') && !e.target.closest('#hamburger')){
+      closeSidebar();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
