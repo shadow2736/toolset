@@ -127,6 +127,13 @@
   .chip.due{color:#a8650a;background:var(--accent-soft)}
   .chip.due.over{color:#fff;background:var(--red)}
   .chip.tag{color:var(--blue);background:#eef2ff}
+  .rep-seg{display:flex;gap:6px;margin-bottom:8px}
+  .rep-seg button{flex:1;padding:7px 0;border:1px solid var(--line);background:var(--bg);border-radius:9px;cursor:pointer;font-size:13px;color:var(--ink);transition:.15s}
+  .rep-seg button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .rep-days{display:flex;gap:5px;margin-top:4px}
+  .rep-days button{flex:1;height:36px;border:1px solid var(--line);background:var(--bg);border-radius:9px;cursor:pointer;font-size:13px;color:var(--ink);transition:.15s}
+  .rep-days button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .chip.rep{color:#a8650a;background:var(--accent-soft)}
   .pri{display:inline-flex;align-items:center;gap:3px}
   .pri .p{width:7px;height:7px;border-radius:50%}
   .pri.p3 .p{background:var(--red)} .pri.p2 .p{background:var(--accent)} .pri.p1 .p{background:var(--blue)}
@@ -372,8 +379,25 @@
           <select id="mList"></select>
         </div>
         <div class="field">
-          <label>截止日期</label>
+          <label>开始日期（重复从该天起）</label>
           <input id="mDue" type="date" />
+        </div>
+      </div>
+      <div class="field">
+        <label>重复（参考苹果闹钟）</label>
+        <div id="repSeg" class="rep-seg">
+          <button type="button" data-rep="once" class="on">一次</button>
+          <button type="button" data-rep="daily">每天</button>
+          <button type="button" data-rep="weekly">自定义周几</button>
+        </div>
+        <div id="repDays" class="rep-days" style="display:none">
+          <button type="button" data-d="1">一</button>
+          <button type="button" data-d="2">二</button>
+          <button type="button" data-d="3">三</button>
+          <button type="button" data-d="4">四</button>
+          <button type="button" data-d="5">五</button>
+          <button type="button" data-d="6">六</button>
+          <button type="button" data-d="0">日</button>
         </div>
       </div>
       <div class="row">
@@ -419,6 +443,8 @@
   let keyword='';
   let editingId=null;
   let draftSubs=[];
+  let draftRep='once';
+  let draftRepDays=[];
   let view='list';
   let curMonth=new Date().toISOString().slice(0,7);
   let curDay=new Date().toISOString().slice(0,10);
@@ -472,9 +498,9 @@
     {seed:'xdw-91',listId:'xingdou_week',title:'[#91] 星豆社财务对接群',note:'对接公司财务(结算/对账/回款)',pri:1,tags:['星豆社','财务'],subs:[]},
     {seed:'xdw-92',listId:'xingdou_week',title:'[#92] 星豆社名称统一',note:'各渠道对外名称规范(星豆社/星豆/星豆君混用)',pri:1,tags:['星豆社','品牌'],subs:[]},
     // —— 一周计划（2026-11-02 ~ 11-08，每日行动 + 习惯卡，seed 前缀 wp_，幂等补种，不覆盖已改状态）——
-    {seed:'wp-rule-workday',listId:'weekplan',title:'🗓 工作日日课（固定作息）',note:'06:30起·07:30-08:30晨间提升(读书/听书+写当日3要事)·08:30-10:00通勤听《纳瓦尔宝典》·10:00-19:00工作(上午攻引流/内容,下午企微/复盘)·19:00-20:30通勤听书·20:30-21:30晚餐放松·21:30-23:00晚间块(副业/提升轮替)·23:30-06:30睡眠7h。睡眠不可砍，通勤不硬逼(累就休息)，平时不刷抖音国际新闻',pri:0,tags:['一周计划','习惯'],subs:[]},
-    {seed:'wp-rule-weekend',listId:'weekplan',title:'🗓 周末日课（深度块）',note:'周六上午副业上架+素材，下午副业数据复盘；周日上午自我提升深度学，下午工作补位(看板/抖音/SOP)，周日晚元认知复盘15分钟。睡眠8h。',pri:0,tags:['一周计划','习惯'],subs:[]},
-    {seed:'wp-rule-tongxun',listId:'weekplan',title:'🎧 通勤听书《纳瓦尔宝典》(微信读书·倍速1.4)',note:'单程1.5h×2=3h/天白捡学习。戴耳机闭目听；不刷抖音国际新闻。替代原听抖音习惯，专治国际局势信息焦虑。',pri:1,tags:['一周计划','听书','纳瓦尔'],subs:[]},
+    {seed:'wp-rule-workday',listId:'weekplan',title:'🗓 工作日日课（固定作息）',note:'06:30起·07:30-08:30晨间提升(读书/听书+写当日3要事)·08:30-10:00通勤听《纳瓦尔宝典》·10:00-19:00工作(上午攻引流/内容,下午企微/复盘)·19:00-20:30通勤听书·20:30-21:30晚餐放松·21:30-23:00晚间块(副业/提升轮替)·23:30-06:30睡眠7h。睡眠不可砍，通勤不硬逼(累就休息)，平时不刷抖音国际新闻',pri:0,tags:['一周计划','习惯'],rep:'weekly',repDays:[1,2,3,4,5],subs:['06:30 起床·洗漱·拉伸·喝水（不碰手机）','07:30–08:30 晨间提升：读书/听书 + 写当日3件要事','10:00–12:00 工作·上午攻引流/内容（保小红书笔记）','13:00–19:00 工作·下午企微承接/当日复盘','20:30–21:30 晚餐·陪伴放松（不看工作群）','21:30–23:00 晚间块：副业/自我提升轮替','23:30–06:30 睡眠7h（不可砍）']},
+    {seed:'wp-rule-weekend',listId:'weekplan',title:'🗓 周末日课（深度块）',note:'周六上午副业上架+素材，下午副业数据复盘；周日上午自我提升深度学，下午工作补位(看板/抖音/SOP)，周日晚元认知复盘15分钟。睡眠8h。',pri:0,tags:['一周计划','习惯'],rep:'weekly',repDays:[0,6],subs:['周六上午 副业上架+素材（快团团半自动）','周六下午 拾色数据复盘（引流/出单/月销 vs 目标）','周日上午 自我提升·深度学','周日下午 工作补位（看板/抖音/SOP）','周日晚 元认知周复盘15分钟','睡眠8h（不可砍）']},
+    {seed:'wp-rule-tongxun',listId:'weekplan',title:'🎧 通勤听书《纳瓦尔宝典》(微信读书·倍速1.4)',note:'单程1.5h×2=3h/天白捡学习。戴耳机闭目听；不刷抖音国际新闻。替代原听抖音习惯，专治国际局势信息焦虑。',pri:1,tags:['一周计划','听书','纳瓦尔'],rep:'daily',subs:[]},
     {seed:'wp-mon-report',listId:'weekplan',title:'周一：向上管理一页纸 + 11-12月IP汇报',note:'手上已有预估模型HTML，还差一页纸目标+风险预案。计划周一(11-02)做汇报。话术：GMV>注册量(老板在意排序)；中性档年底注册~2400/GMV~25万；瓶颈=不投流引流规模；抖音为第二曲线。',pri:3,tags:['一周计划','工作','汇报'],due:'2026-11-02',subs:['补一页纸目标','补风险预案(单点依赖小红书/不投流天花板)','对齐老板']},
     {seed:'wp-mon-kpi',listId:'weekplan',title:'周一：KPI拆解初稿(注册+GMV倒推周/日)',note:'老板只给月度大数，自己拆：中性档年底注册~2400(现477)、GMV~25万。倒推每周新增注册~(2400-477)/8周、每周GMV~3万。',pri:2,tags:['一周计划','工作','KPI'],due:'2026-11-02',subs:['注册倒推','GMV倒推','笔记产能匹配']},
     {seed:'wp-mon-xhs',listId:'weekplan',title:'周一：发星豆社小红书笔记1篇',note:'上午10-12精力峰值先保核心引流不断更。计划1-2天一篇，当前还没开始做，先启动。',pri:2,tags:['一周计划','工作','小红书'],due:'2026-11-02',subs:[]},
@@ -497,6 +523,47 @@
     return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
   }
   function uid(){return Math.random().toString(36).slice(2,9);}
+
+  // ---------- 重复（recurrence，参考苹果闹钟）----------
+  // rep: undefined/'once' = 单次（仅 due 当天）；'daily' = 每天；'weekly' = 自定义周几（repDays: 0=日..6=六）
+  function repMatchesToday(t,dateStr){
+    dateStr=dateStr||todayStr();
+    if(!t.rep||t.rep==='once')return false;
+    if(t.rep==='daily')return true;
+    if(t.rep==='weekly'){
+      const w=new Date(dateStr+'T00:00:00').getDay();
+      return (t.repDays||[]).indexOf(w)>=0;
+    }
+    return false;
+  }
+  function isDoneToday(t){
+    if(t.rep&&t.rep!=='once'){
+      const today=todayStr();
+      if((t.subs||[]).length) return t.subs.every(s=>s.done);
+      return (t.doneDates||[]).indexOf(today)>=0;
+    }
+    return !!t.done;
+  }
+  function repLabel(t){
+    if(!t.rep||t.rep==='once')return '';
+    if(t.rep==='daily')return '🔁 每天';
+    if(t.rep==='weekly'){
+      const map={0:'日',1:'一',2:'二',3:'三',4:'四',5:'五',6:'六'};
+      return '🔁 每周'+((t.repDays||[]).map(d=>map[d]).join(''));
+    }
+    return '';
+  }
+  // 循环任务的子任务按天重置：每天首次加载时把循环任务的子任务清回未完成（doneDates 保留历史）
+  function resetRecurringDaily(){
+    const today=todayStr();
+    state.tasks.forEach(t=>{
+      if(t.rep&&t.rep!=='once'&&t.lastReset!==today){
+        (t.subs||[]).forEach(s=>s.done=false);
+        t.done=false;
+        t.lastReset=today;
+      }
+    });
+  }
 
   // 删除墓碑：用户主动删过的清单/种子任务，永不再自动补回
   // 存在 state._rm = {lists:[id], seeds:[seed]}；换设备或清缓存后仍生效（随云端同步）
@@ -526,7 +593,8 @@
         id:uid(),seed:d.seed,listId:d.listId,title:d.title,note:d.note||'',
         pri:d.pri||0,tags:d.tags||[],done:d.done||false,
         subs:(d.subs||[]).map(x=>({text:x,done:false})),
-        due:(d.due!==undefined?d.due:todayStr()),created:Date.now()+i,order:0
+        due:(d.due!==undefined?d.due:todayStr()),created:Date.now()+i,order:0,
+        rep:d.rep||undefined,repDays:d.repDays?d.repDays.slice():undefined,doneDates:[],lastReset:undefined
       });
       changed=true;
     });
@@ -546,6 +614,25 @@
       }
     });
     if(seedTasks(s))changed=true;
+    // 迁移：已入库的旧版「日课」任务升级为带子任务+循环（幂等，仅当缺 rep/subs 时补）
+    const RULE_MIGRATE={
+      'wp-rule-workday':{rep:'weekly',repDays:[1,2,3,4,5],subs:['06:30 起床·洗漱·拉伸·喝水（不碰手机）','07:30–08:30 晨间提升：读书/听书 + 写当日3要事','10:00–12:00 工作·上午攻引流/内容（保小红书笔记）','13:00–19:00 工作·下午企微承接/当日复盘','20:30–21:30 晚餐·陪伴放松（不看工作群）','21:30–23:00 晚间块：副业/自我提升轮替','23:30–06:30 睡眠7h（不可砍）']},
+      'wp-rule-weekend':{rep:'weekly',repDays:[0,6],subs:['周六上午 副业上架+素材（快团团半自动）','周六下午 拾色数据复盘（引流/出单/月销 vs 目标）','周日上午 自我提升·深度学','周日下午 工作补位（看板/抖音/SOP）','周日晚 元认知周复盘15分钟','睡眠8h（不可砍）']},
+      'wp-rule-tongxun':{rep:'daily',subs:[]}
+    };
+    Object.keys(RULE_MIGRATE).forEach(seed=>{
+      const t=s.tasks.find(x=>x.seed===seed);
+      if(!t)return;
+      const m=RULE_MIGRATE[seed];
+      const sameRep=(t.rep===m.rep)&&(!(t.repDays&&m.repDays)||(t.repDays.join()===m.repDays.join()));
+      const sameSubs=(t.subs||[]).length===m.subs.length;
+      if(!sameRep||!sameSubs){
+        t.rep=m.rep;t.repDays=m.repDays;
+        if(!t.doneDates)t.doneDates=[];
+        if(!sameSubs)t.subs=m.subs.map(x=>({text:x,done:false}));
+        changed=true;
+      }
+    });
     return changed;
   }
 
@@ -642,12 +729,12 @@
   function isToday(s){return s===new Date().toISOString().slice(0,10);}
   function visibleTasks(){
     let arr=state.tasks.slice();
-    if(curList==='today') arr=arr.filter(t=>!t.done && t.due && isToday(t.due));
-    else if(curList==='upcoming') arr=arr.filter(t=>!t.done && t.due && t.due>new Date().toISOString().slice(0,10));
-    else if(curList==='inbox') arr=arr.filter(t=>!t.done);
-    else if(curList==='completed') arr=arr.filter(t=>t.done);
-    else if(curList==='day') arr=arr.filter(t=>!t.done && t.due===curDay);
-    else arr=arr.filter(t=>t.listId===curList && !t.done);
+    if(curList==='today') arr=arr.filter(t=>!isDoneToday(t) && ((t.rep&&t.rep!=='once')?repMatchesToday(t):(t.due&&isToday(t.due))));
+    else if(curList==='upcoming') arr=arr.filter(t=>!isDoneToday(t) && ((t.rep&&t.rep!=='once')?true:(t.due&&t.due>new Date().toISOString().slice(0,10))));
+    else if(curList==='inbox') arr=arr.filter(t=>!isDoneToday(t));
+    else if(curList==='completed') arr=arr.filter(t=>t.done && !(t.rep&&t.rep!=='once'));
+    else if(curList==='day') arr=arr.filter(t=>{ if(t.rep&&t.rep!=='once'){ if(!repMatchesToday(t,curDay))return false; return !(curDay===todayStr()&&isDoneToday(t)); } return !isDoneToday(t)&&t.due===curDay; });
+    else arr=arr.filter(t=>t.listId===curList && !isDoneToday(t));
     if(keyword){
       const k=keyword.toLowerCase();
       arr=arr.filter(t=>(t.title+t.note+(t.tags||[]).join(',')).toLowerCase().includes(k));
@@ -660,15 +747,16 @@
     return arr;
   }
   function countFor(id){
-    if(id==='today') return state.tasks.filter(t=>!t.done&&t.due&&isToday(t.due)).length;
-    if(id==='upcoming') return state.tasks.filter(t=>!t.done&&t.due&&t.due>new Date().toISOString().slice(0,10)).length;
-    if(id==='inbox') return state.tasks.filter(t=>!t.done).length;
-    if(id==='completed') return state.tasks.filter(t=>t.done).length;
-    return state.tasks.filter(t=>t.listId===id&&!t.done).length;
+    if(id==='today') return state.tasks.filter(t=>!isDoneToday(t) && ((t.rep&&t.rep!=='once')?repMatchesToday(t):(t.due&&isToday(t.due)))).length;
+    if(id==='upcoming') return state.tasks.filter(t=>!isDoneToday(t) && ((t.rep&&t.rep!=='once')?true:(t.due&&t.due>new Date().toISOString().slice(0,10)))).length;
+    if(id==='inbox') return state.tasks.filter(t=>!isDoneToday(t)).length;
+    if(id==='completed') return state.tasks.filter(t=>t.done&&!(t.rep&&t.rep!=='once')).length;
+    return state.tasks.filter(t=>t.listId===id&&!isDoneToday(t)).length;
   }
 
   // ---------- 渲染 ----------
   function render(){
+    resetRecurringDaily();
     document.getElementById('smartNav').innerHTML=SMART.map(s=>`
       <div class="nav-item ${curList===s.id?'active':''}" data-list="${s.id}">
         <span class="ico">${s.ico}</span><span>${s.name}</span>
@@ -725,9 +813,10 @@
     const subs=(t.subs||[]);
     const doneSub=subs.filter(s=>s.done).length;
     const subHTML=subs.length?`<span class="sub-prog">☑ ${doneSub}/${subs.length}</span>`:'';
-    const derivedDone=subs.length?subs.every(s=>s.done):t.done;
-    const dueOver=t.due&&!derivedDone&&t.due<new Date().toISOString().slice(0,10);
-    const dueTxt=t.due?`<span class="chip due ${dueOver?'over':''}">📅 ${t.due}${dueOver?' 逾期':''}</span>`:'';
+    const isRep=(t.rep&&t.rep!=='once');
+    const derivedDone=isRep?isDoneToday(t):(subs.length?subs.every(s=>s.done):t.done);
+    const dueOver=!isRep&&t.due&&!derivedDone&&t.due<new Date().toISOString().slice(0,10);
+    const dueTxt=isRep?`<span class="chip rep">${repLabel(t)}</span>`:(t.due?`<span class="chip due ${dueOver?'over':''}">📅 ${t.due}${dueOver?' 逾期':''}</span>`:'');
     const priTxt=t.pri>0?`<span class="chip pri p${t.pri}"><span class="p"></span>${['','低','中','高'][t.pri]}</span>`:'';
     const tagHTML=(t.tags||[]).map(x=>`<span class="chip tag">#${esc(x)}</span>`).join('');
     const noteHTML=t.note?`<div class="task-meta"><span class="chip">📝 ${esc(t.note)}</span></div>`:'';
@@ -796,7 +885,10 @@
   }
   function calCell(date,other,todayStr){
     const [y,m,d]=date.split('-').map(Number);
-    const tasks=state.tasks.filter(t=>!t.done&&t.due===date);
+    const tasks=state.tasks.filter(t=>{
+      if(t.rep&&t.rep!=='once'){ if(!repMatchesToday(t,date))return false; return !(date===todayStr&&isDoneToday(t)); }
+      return !t.done&&t.due===date;
+    });
     const dots=tasks.slice(0,3).map(t=>{
       const cls=t.pri>=3?'hi':(t.pri>=2?'mid':'');
       return `<div class="cal-dot ${cls}">${esc(t.title.length>10?t.title.slice(0,10)+'…':t.title)}</div>`;
@@ -811,7 +903,10 @@
     const head=document.getElementById('dayListHead');
     const wrap=document.getElementById('dayListArea');
     if(!head||!wrap)return;
-    const tasks=state.tasks.filter(t=>!t.done&&t.due===curDay);
+    const tasks=state.tasks.filter(t=>{
+      if(t.rep&&t.rep!=='once'){ if(!repMatchesToday(t,curDay))return false; return !(curDay===todayStr()&&isDoneToday(t)); }
+      return !t.done&&t.due===curDay;
+    });
     head.textContent=`📌 ${curDay} 当天任务（${tasks.length}）`;
     wrap.innerHTML=tasks.length?tasks.map(taskHTML).join(''):`<div class="empty"><div class="big">🎉</div>这一天没有待办</div>`;
   }
@@ -987,6 +1082,7 @@
     const chk=e.target.dataset.check;
     if(chk){const t=state.tasks.find(x=>x.id===chk);
       if(t.subs&&t.subs.length){const all=t.subs.every(s=>s.done);t.subs.forEach(s=>s.done=!all);t.done=!all;}
+      else if(t.rep&&t.rep!=='once'){const dd=t.doneDates||(t.doneDates=[]);const today=todayStr();const i=dd.indexOf(today);if(i>=0)dd.splice(i,1);else dd.push(today);}
       else t.done=!t.done;
       save();render();return;}
     const vtab=e.target.dataset.view;
@@ -1055,8 +1151,11 @@
   function checkNotify(){
     if(!('Notification' in window)||Notification.permission!=='granted')return;
     const today=new Date().toISOString().slice(0,10);
-    state.tasks.filter(t=>!t.done&&t.due===today).forEach(t=>{
-      try{new Notification('📅 待办提醒 · 今天到期',{body:t.title});}catch(e){}
+    state.tasks.filter(t=>{
+      if(t.rep&&t.rep!=='once'){ if(!repMatchesToday(t,today))return false; return !isDoneToday(t); }
+      return !t.done&&t.due===today;
+    }).forEach(t=>{
+      try{new Notification('📅 待办提醒',{body:t.title});}catch(e){}
     });
   }
   document.getElementById('notifyBtn').onclick=()=>{
@@ -1081,6 +1180,8 @@
   function openModal(id){
     editingId=id;const t=state.tasks.find(x=>x.id===id);if(!t)return;
     draftSubs=(t.subs||[]).map(s=>({...s}));
+    draftRep=(t.rep||'once');
+    draftRepDays=(t.repDays||[]).slice();
     document.getElementById('mTitle').value=t.title;
     document.getElementById('mNote').value=t.note||'';
     const sel=document.getElementById('mList');
@@ -1090,7 +1191,14 @@
     document.getElementById('mPri').value=String(t.pri||0);
     document.getElementById('mTags').value=(t.tags||[]).join(', ');
     renderSubs();
+    renderRep();
     mask.classList.add('show');
+  }
+  function renderRep(){
+    document.querySelectorAll('#repSeg button').forEach(b=>b.classList.toggle('on',b.dataset.rep===draftRep));
+    const daysBox=document.getElementById('repDays');
+    daysBox.style.display=(draftRep==='weekly')?'flex':'none';
+    daysBox.querySelectorAll('button').forEach(b=>b.classList.toggle('on',draftRepDays.indexOf(+b.dataset.d)>=0));
   }
   function renderSubs(){
     document.getElementById('subList').innerHTML=draftSubs.map((s,i)=>`
@@ -1108,6 +1216,21 @@
   document.getElementById('subAddBtn').onclick=addSub;
   subInput.addEventListener('keydown',e=>{if(e.key==='Enter')addSub();});
 
+  // 重复选择器（参考苹果闹钟）
+  document.getElementById('repSeg').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    draftRep=b.dataset.rep;
+    if(draftRep==='weekly'&&draftRepDays.length===0)draftRepDays=[1,2,3,4,5];
+    renderRep();
+  });
+  document.getElementById('repDays').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    const d=+b.dataset.d;
+    const i=draftRepDays.indexOf(d);
+    if(i>=0)draftRepDays.splice(i,1);else draftRepDays.push(d);
+    renderRep();
+  });
+
   document.getElementById('saveBtn').onclick=()=>{
     const t=state.tasks.find(x=>x.id===editingId);if(!t)return;
     t.title=document.getElementById('mTitle').value.trim()||'未命名任务';
@@ -1116,7 +1239,11 @@
     t.due=document.getElementById('mDue').value;
     t.pri=+document.getElementById('mPri').value;
     t.tags=document.getElementById('mTags').value.split(',').map(s=>s.trim()).filter(Boolean);
-    t.subs=draftSubs;if(draftSubs.length)t.done=draftSubs.every(s=>s.done);save();mask.classList.remove('show');render();
+    t.subs=draftSubs;if(draftSubs.length)t.done=draftSubs.every(s=>s.done);
+    if(draftRep==='once'){t.rep=undefined;t.repDays=undefined;}
+    else{t.rep=draftRep;if(draftRep==='weekly'){t.repDays=draftRepDays.slice();if(t.repDays.length===0)t.repDays=[0,1,2,3,4,5,6];}else{t.repDays=undefined;}}
+    if(!t.doneDates)t.doneDates=[];
+    save();mask.classList.remove('show');render();
   };
   document.getElementById('cancelBtn').onclick=()=>mask.classList.remove('show');
   document.getElementById('deleteBtn').onclick=()=>{
