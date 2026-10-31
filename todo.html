@@ -384,6 +384,10 @@
         </div>
       </div>
       <div class="field">
+        <label>提醒时间（精确到分钟）</label>
+        <input id="mRemind" type="time" step="60" />
+      </div>
+      <div class="field">
         <label>重复（参考苹果闹钟）</label>
         <div id="repSeg" class="rep-seg">
           <button type="button" data-rep="once" class="on">一次</button>
@@ -498,9 +502,9 @@
     {seed:'xdw-91',listId:'xingdou_week',title:'[#91] 星豆社财务对接群',note:'对接公司财务(结算/对账/回款)',pri:1,tags:['星豆社','财务'],subs:[]},
     {seed:'xdw-92',listId:'xingdou_week',title:'[#92] 星豆社名称统一',note:'各渠道对外名称规范(星豆社/星豆/星豆君混用)',pri:1,tags:['星豆社','品牌'],subs:[]},
     // —— 一周计划（2026-11-02 ~ 11-08，每日行动 + 习惯卡，seed 前缀 wp_，幂等补种，不覆盖已改状态）——
-    {seed:'wp-rule-workday',listId:'weekplan',title:'🗓 工作日日课（固定作息）',note:'06:30起·07:30-08:30晨间提升(读书/听书+写当日3要事)·08:30-10:00通勤听《纳瓦尔宝典》·10:00-19:00工作(上午攻引流/内容,下午企微/复盘)·19:00-20:30通勤听书·20:30-21:30晚餐放松·21:30-23:00晚间块(副业/提升轮替)·23:30-06:30睡眠7h。睡眠不可砍，通勤不硬逼(累就休息)，平时不刷抖音国际新闻',pri:0,tags:['一周计划','习惯'],rep:'weekly',repDays:[1,2,3,4,5,6],subs:['06:30 起床·洗漱·拉伸·喝水（不碰手机）','07:30–08:30 晨间提升：读书/听书 + 写当日3件要事','10:00–12:00 工作·上午攻引流/内容（保小红书笔记）','13:00–19:00 工作·下午企微承接/当日复盘','20:30–21:30 晚餐·陪伴放松（不看工作群）','21:30–23:00 晚间块：副业/自我提升轮替','23:30–06:30 睡眠7h（不可砍）']},
-    {seed:'wp-rule-weekend',listId:'weekplan',title:'🗓 周天休息日日课（深度块）',note:'周天单休·深度自我提升+副业+复盘。上午深度学，下午副业上架+数据复盘（见今日待办），晚周复盘。睡眠8h。',pri:0,tags:['一周计划','习惯'],rep:'weekly',repDays:[0],subs:['周天 深度自我提升（读书/听书/学技能 2-3h）','周天 副业专注块：上架+素材+数据复盘（具体见今日待办）','周天晚 元认知周复盘15分钟 + 下周计划','睡眠8h（不可砍）']},
-    {seed:'wp-rule-tongxun',listId:'weekplan',title:'🎧 通勤听书《纳瓦尔宝典》(微信读书·倍速1.4)',note:'单程1.5h×2=3h/天白捡学习（周一到六上班通勤日）。戴耳机闭目听；不刷抖音国际新闻。替代原听抖音习惯，专治国际局势信息焦虑。',pri:1,tags:['一周计划','听书','纳瓦尔'],rep:'weekly',repDays:[1,2,3,4,5,6],subs:[]},
+    {seed:'wp-rule-workday',listId:'weekplan',title:'🗓 工作日日课（固定作息）',note:'06:30起·07:30-08:30晨间提升(读书/听书+写当日3要事)·08:30-10:00通勤听《纳瓦尔宝典》·10:00-19:00工作(上午攻引流/内容,下午企微/复盘)·19:00-20:30通勤听书·20:30-21:30晚餐放松·21:30-23:00晚间块(副业/提升轮替)·23:30-06:30睡眠7h。睡眠不可砍，通勤不硬逼(累就休息)，平时不刷抖音国际新闻',pri:0,tags:['一周计划','习惯'],rep:'weekly',repDays:[1,2,3,4,5,6],remindTime:'06:30',subs:['06:30 起床·洗漱·拉伸·喝水（不碰手机）','07:30–08:30 晨间提升：读书/听书 + 写当日3件要事','10:00–12:00 工作·上午攻引流/内容（保小红书笔记）','13:00–19:00 工作·下午企微承接/当日复盘','20:30–21:30 晚餐·陪伴放松（不看工作群）','21:30–23:00 晚间块：副业/自我提升轮替','23:30–06:30 睡眠7h（不可砍）']},
+    {seed:'wp-rule-weekend',listId:'weekplan',title:'🗓 周天休息日日课（深度块）',note:'周天单休·深度自我提升+副业+复盘。上午深度学，下午副业上架+数据复盘（见今日待办），晚周复盘。睡眠8h。',pri:0,tags:['一周计划','习惯'],rep:'weekly',repDays:[0],remindTime:'09:00',subs:['周天 深度自我提升（读书/听书/学技能 2-3h）','周天 副业专注块：上架+素材+数据复盘（具体见今日待办）','周天晚 元认知周复盘15分钟 + 下周计划','睡眠8h（不可砍）']},
+    {seed:'wp-rule-tongxun',listId:'weekplan',title:'🎧 通勤听书《纳瓦尔宝典》(微信读书·倍速1.4)',note:'单程1.5h×2=3h/天白捡学习（周一到六上班通勤日）。戴耳机闭目听；不刷抖音国际新闻。替代原听抖音习惯，专治国际局势信息焦虑。',pri:1,tags:['一周计划','听书','纳瓦尔'],rep:'weekly',repDays:[1,2,3,4,5,6],remindTime:'08:00',subs:[]},
     {seed:'wp-mon-report',listId:'weekplan',title:'周一：向上管理一页纸 + 11-12月IP汇报',note:'手上已有预估模型HTML，还差一页纸目标+风险预案。计划周一(11-02)做汇报。话术：GMV>注册量(老板在意排序)；中性档年底注册~2400/GMV~25万；瓶颈=不投流引流规模；抖音为第二曲线。',pri:3,tags:['一周计划','工作','汇报'],due:'2026-11-02',subs:['补一页纸目标','补风险预案(单点依赖小红书/不投流天花板)','对齐老板']},
     {seed:'wp-mon-kpi',listId:'weekplan',title:'周一：KPI拆解初稿(注册+GMV倒推周/日)',note:'老板只给月度大数，自己拆：中性档年底注册~2400(现477)、GMV~25万。倒推每周新增注册~(2400-477)/8周、每周GMV~3万。',pri:2,tags:['一周计划','工作','KPI'],due:'2026-11-02',subs:['注册倒推','GMV倒推','笔记产能匹配']},
     {seed:'wp-mon-xhs',listId:'weekplan',title:'周一：发星豆社小红书笔记1篇',note:'上午10-12精力峰值先保核心引流不断更。计划1-2天一篇，当前还没开始做，先启动。',pri:2,tags:['一周计划','工作','小红书'],due:'2026-11-02',subs:[]},
@@ -594,6 +598,7 @@
         pri:d.pri||0,tags:d.tags||[],done:d.done||false,
         subs:(d.subs||[]).map(x=>({text:x,done:false})),
         due:(d.due!==undefined?d.due:todayStr()),created:Date.now()+i,order:0,
+        remindTime:d.remindTime||'',
         rep:d.rep||undefined,repDays:d.repDays?d.repDays.slice():undefined,doneDates:[],lastReset:undefined
       });
       changed=true;
@@ -616,9 +621,9 @@
     if(seedTasks(s))changed=true;
     // 迁移：已入库的旧版「日课」任务升级为带子任务+循环（幂等，仅当缺 rep/subs 时补）
     const RULE_MIGRATE={
-      'wp-rule-workday':{rep:'weekly',repDays:[1,2,3,4,5,6],subs:['06:30 起床·洗漱·拉伸·喝水（不碰手机）','07:30–08:30 晨间提升：读书/听书 + 写当日3要事','10:00–12:00 工作·上午攻引流/内容（保小红书笔记）','13:00–19:00 工作·下午企微承接/当日复盘','20:30–21:30 晚餐·陪伴放松（不看工作群）','21:30–23:00 晚间块：副业/自我提升轮替','23:30–06:30 睡眠7h（不可砍）']},
-      'wp-rule-weekend':{rep:'weekly',repDays:[0],subs:['周天 深度自我提升（读书/听书/学技能 2-3h）','周天 副业专注块：上架+素材+数据复盘（具体见今日待办）','周天晚 元认知周复盘15分钟 + 下周计划','睡眠8h（不可砍）']},
-      'wp-rule-tongxun':{rep:'weekly',repDays:[1,2,3,4,5,6],subs:[]}
+      'wp-rule-workday':{rep:'weekly',repDays:[1,2,3,4,5,6],remindTime:'06:30',subs:['06:30 起床·洗漱·拉伸·喝水（不碰手机）','07:30–08:30 晨间提升：读书/听书 + 写当日3要事','10:00–12:00 工作·上午攻引流/内容（保小红书笔记）','13:00–19:00 工作·下午企微承接/当日复盘','20:30–21:30 晚餐·陪伴放松（不看工作群）','21:30–23:00 晚间块：副业/自我提升轮替','23:30–06:30 睡眠7h（不可砍）']},
+      'wp-rule-weekend':{rep:'weekly',repDays:[0],remindTime:'09:00',subs:['周天 深度自我提升（读书/听书/学技能 2-3h）','周天 副业专注块：上架+素材+数据复盘（具体见今日待办）','周天晚 元认知周复盘15分钟 + 下周计划','睡眠8h（不可砍）']},
+      'wp-rule-tongxun':{rep:'weekly',repDays:[1,2,3,4,5,6],remindTime:'08:00',subs:[]}
     };
     Object.keys(RULE_MIGRATE).forEach(seed=>{
       const t=s.tasks.find(x=>x.seed===seed);
@@ -627,7 +632,7 @@
       const sameRep=(t.rep===m.rep)&&(!(t.repDays&&m.repDays)||(t.repDays.join()===m.repDays.join()));
       const sameSubs=((t.subs||[]).map(x=>x.text||x).join('|')===(m.subs||[]).join('|'));
       if(!sameRep||!sameSubs){
-        t.rep=m.rep;t.repDays=m.repDays;
+        t.rep=m.rep;t.repDays=m.repDays;t.remindTime=m.remindTime;
         if(!t.doneDates)t.doneDates=[];
         if(!sameSubs)t.subs=m.subs.map(x=>({text:x,done:false}));
         changed=true;
@@ -647,6 +652,19 @@
       const m=RENAME[oldSeed];
       t.seed=m.seed;t.due=m.due;t.title=m.title;
       changed=true;
+    });
+    // 迁移：为本周计划 due 任务补默认提醒时间（精确到分钟）；日课已在 RULE_MIGRATE 设开始时间
+    const REMIND_DEFAULT={
+      'wp-mon-report':'10:00','wp-mon-kpi':'14:00','wp-mon-xhs':'11:00',
+      'wp-tue-ip':'10:00','wp-tue-shise':'21:30','wp-wed-xhs':'11:00',
+      'wp-thu-plan':'15:00','wp-thu-shise':'21:30','wp-fri-xhs':'11:00',
+      'wp-sun-kt':'09:00','wp-sun-shise':'14:00','wp-fri-board':'17:00',
+      'wp-sat-douyin':'10:00','wp-sat-sop':'15:00','wp-sun-review':'21:00'
+    };
+    s.tasks.forEach(t=>{
+      if(t.remindTime)return;
+      const def=(t.seed&&REMIND_DEFAULT[t.seed])||'09:00';
+      t.remindTime=def;changed=true;
     });
     return changed;
   }
@@ -832,6 +850,7 @@
     const derivedDone=isRep?isDoneToday(t):(subs.length?subs.every(s=>s.done):t.done);
     const dueOver=!isRep&&t.due&&!derivedDone&&t.due<new Date().toISOString().slice(0,10);
     const dueTxt=isRep?`<span class="chip rep">${repLabel(t)}</span>`:(t.due?`<span class="chip due ${dueOver?'over':''}">📅 ${t.due}${dueOver?' 逾期':''}</span>`:'');
+    const remindTxt=t.remindTime?`<span class="chip remind">⏰ ${t.remindTime}</span>`:'';
     const priTxt=t.pri>0?`<span class="chip pri p${t.pri}"><span class="p"></span>${['','低','中','高'][t.pri]}</span>`:'';
     const tagHTML=(t.tags||[]).map(x=>`<span class="chip tag">#${esc(x)}</span>`).join('');
     const noteHTML=t.note?`<div class="task-meta"><span class="chip">📝 ${esc(t.note)}</span></div>`:'';
@@ -840,7 +859,7 @@
       <div class="check" data-check="${t.id}"></div>
       <div class="task-body">
         <div class="task-title">${esc(t.title)}</div>
-        <div class="task-meta">${priTxt}${dueTxt}${subHTML}${tagHTML}</div>
+        <div class="task-meta">${priTxt}${dueTxt}${remindTxt}${subHTML}${tagHTML}</div>
         ${noteHTML}
         ${subListHTML}
       </div>
@@ -1111,7 +1130,7 @@
     const v=qaInput.value.trim();if(!v)return;
     const t={id:uid(),
       listId:(curList==='completed'||curList==='today'||curList==='upcoming'||curList==='day')?'inbox':curList,
-      title:v,note:'',due:curList==='today'?new Date().toISOString().slice(0,10):'',pri:0,tags:[],done:false,subs:[],created:Date.now(),order:99999};
+      title:v,note:'',due:curList==='today'?new Date().toISOString().slice(0,10):'',remindTime:'',pri:0,tags:[],done:false,subs:[],created:Date.now(),order:99999};
     state.tasks.unshift(t);qaInput.value='';save();render();
   }
   document.getElementById('quickAddBtn').onclick=quickAdd;
@@ -1161,16 +1180,29 @@
   // ---------- 浏览器通知 ----------
   function startNotifyCheck(){
     checkNotify();
-    if(!window.__notifyTimer) window.__notifyTimer=setInterval(checkNotify,60*60*1000);
+    if(!window.__notifyTimer) window.__notifyTimer=setInterval(checkNotify,60*1000);
   }
   function checkNotify(){
     if(!('Notification' in window)||Notification.permission!=='granted')return;
-    const today=new Date().toISOString().slice(0,10);
+    const now=new Date();
+    const today=now.toISOString().slice(0,10);
+    const curMin=now.getHours()*60+now.getMinutes();
     state.tasks.filter(t=>{
-      if(t.rep&&t.rep!=='once'){ if(!repMatchesToday(t,today))return false; return !isDoneToday(t); }
-      return !t.done&&t.due===today;
+      let active;
+      if(t.rep&&t.rep!=='once'){ if(!repMatchesToday(t,today))return false; active=!isDoneToday(t); }
+      else { active=!t.done&&t.due===today; }
+      if(!active)return false;
+      if(t.remindTime){
+        const p=t.remindTime.split(':'); const rtMin=(+p[0])*60+(+p[1]);
+        if(curMin<rtMin) return false;
+      }
+      if(!t.notifiedDates)t.notifiedDates=[];
+      if(t.notifiedDates.indexOf(today)>=0) return false;
+      return true;
     }).forEach(t=>{
-      try{new Notification('📅 待办提醒',{body:t.title});}catch(e){}
+      try{new Notification('⏰ 待办提醒',{body:(t.remindTime?t.remindTime+' ':'')+t.title});}catch(e){}
+      if(!t.notifiedDates)t.notifiedDates=[];
+      if(t.notifiedDates.indexOf(today)<0)t.notifiedDates.push(today);
     });
   }
   document.getElementById('notifyBtn').onclick=()=>{
@@ -1203,6 +1235,7 @@
     sel.innerHTML=`<option value="inbox">待办箱</option>`+state.lists.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('');
     sel.value=t.listId||'inbox';
     document.getElementById('mDue').value=t.due||'';
+    document.getElementById('mRemind').value=t.remindTime||'';
     document.getElementById('mPri').value=String(t.pri||0);
     document.getElementById('mTags').value=(t.tags||[]).join(', ');
     renderSubs();
@@ -1252,6 +1285,7 @@
     t.note=document.getElementById('mNote').value.trim();
     t.listId=document.getElementById('mList').value;
     t.due=document.getElementById('mDue').value;
+    t.remindTime=document.getElementById('mRemind').value;
     t.pri=+document.getElementById('mPri').value;
     t.tags=document.getElementById('mTags').value.split(',').map(s=>s.trim()).filter(Boolean);
     t.subs=draftSubs;if(draftSubs.length)t.done=draftSubs.every(s=>s.done);
