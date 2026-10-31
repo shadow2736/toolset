@@ -434,7 +434,7 @@
   const DEFAULT_LISTS=[
     {id:'xingdou',name:'星豆社'},{id:'siyu',name:'私域运营'},
     {id:'jicai',name:'集采分销'},{id:'shise',name:'拾色副业'},
-    {id:'ipyun',name:'IP运营'},{id:'xingdou_week',name:'星豆社·本周待办 10-13'},{id:'huankuan',name:'还款计划'}
+    {id:'ipyun',name:'IP运营'},{id:'xingdou_week',name:'星豆社·本周待办 10-13'},{id:'weekplan',name:'一周计划'},{id:'huankuan',name:'还款计划'}
   ];
 
   // 幂等补种数据：只补 seed 不存在的任务，绝不覆盖用户已改的状态
@@ -471,6 +471,25 @@
     {seed:'xdw-90',listId:'xingdou_week',title:'[#90] 小程序子账号开通',note:'运营/客服/财务角色权限',pri:1,tags:['星豆社','账号'],subs:[]},
     {seed:'xdw-91',listId:'xingdou_week',title:'[#91] 星豆社财务对接群',note:'对接公司财务(结算/对账/回款)',pri:1,tags:['星豆社','财务'],subs:[]},
     {seed:'xdw-92',listId:'xingdou_week',title:'[#92] 星豆社名称统一',note:'各渠道对外名称规范(星豆社/星豆/星豆君混用)',pri:1,tags:['星豆社','品牌'],subs:[]},
+    // —— 一周计划（2026-11-02 ~ 11-08，每日行动 + 习惯卡，seed 前缀 wp_，幂等补种，不覆盖已改状态）——
+    {seed:'wp-rule-workday',listId:'weekplan',title:'🗓 工作日日课（固定作息）',note:'06:30起·07:30-08:30晨间提升(读书/听书+写当日3要事)·08:30-10:00通勤听《纳瓦尔宝典》·10:00-19:00工作(上午攻引流/内容,下午企微/复盘)·19:00-20:30通勤听书·20:30-21:30晚餐放松·21:30-23:00晚间块(副业/提升轮替)·23:30-06:30睡眠7h。睡眠不可砍，通勤不硬逼(累就休息)，平时不刷抖音国际新闻',pri:0,tags:['一周计划','习惯'],subs:[]},
+    {seed:'wp-rule-weekend',listId:'weekplan',title:'🗓 周末日课（深度块）',note:'周六上午副业上架+素材，下午副业数据复盘；周日上午自我提升深度学，下午工作补位(看板/抖音/SOP)，周日晚元认知复盘15分钟。睡眠8h。',pri:0,tags:['一周计划','习惯'],subs:[]},
+    {seed:'wp-rule-tongxun',listId:'weekplan',title:'🎧 通勤听书《纳瓦尔宝典》(微信读书·倍速1.4)',note:'单程1.5h×2=3h/天白捡学习。戴耳机闭目听；不刷抖音国际新闻。替代原听抖音习惯，专治国际局势信息焦虑。',pri:1,tags:['一周计划','听书','纳瓦尔'],subs:[]},
+    {seed:'wp-mon-report',listId:'weekplan',title:'周一：向上管理一页纸 + 11-12月IP汇报',note:'手上已有预估模型HTML，还差一页纸目标+风险预案。计划周一(11-02)做汇报。话术：GMV>注册量(老板在意排序)；中性档年底注册~2400/GMV~25万；瓶颈=不投流引流规模；抖音为第二曲线。',pri:3,tags:['一周计划','工作','汇报'],due:'2026-11-02',subs:['补一页纸目标','补风险预案(单点依赖小红书/不投流天花板)','对齐老板']},
+    {seed:'wp-mon-kpi',listId:'weekplan',title:'周一：KPI拆解初稿(注册+GMV倒推周/日)',note:'老板只给月度大数，自己拆：中性档年底注册~2400(现477)、GMV~25万。倒推每周新增注册~(2400-477)/8周、每周GMV~3万。',pri:2,tags:['一周计划','工作','KPI'],due:'2026-11-02',subs:['注册倒推','GMV倒推','笔记产能匹配']},
+    {seed:'wp-mon-xhs',listId:'weekplan',title:'周一：发星豆社小红书笔记1篇',note:'上午10-12精力峰值先保核心引流不断更。计划1-2天一篇，当前还没开始做，先启动。',pri:2,tags:['一周计划','工作','小红书'],due:'2026-11-02',subs:[]},
+    {seed:'wp-tue-ip',listId:'weekplan',title:'周二：11-12月IP筹备+跟老板确认库存/素材',note:'6个IP(南部档案2弹/花开锦绣重点,两京十五日/大梦归离次之,中餐厅/密室最后)。上午块做筹备，需跟老板确认各IP库存量及授权素材到位。',pri:2,tags:['一周计划','工作','IP'],due:'2026-11-03',subs:['确认库存','确认素材']},
+    {seed:'wp-tue-shise',listId:'weekplan',title:'周二晚：拾色小红书笔记1篇',note:'主理人=五年从业男生(替女生发声/从业者科普/两性沟通)。引流是0,先发起来。每周2篇(周二/四晚21:30-23:00)。',pri:2,tags:['一周计划','副业','小红书'],due:'2026-11-03',subs:[]},
+    {seed:'wp-wed-xhs',listId:'weekplan',title:'周三：发星豆社小红书笔记1篇',note:'上午块保底发1篇，维持更新频率。',pri:2,tags:['一周计划','工作','小红书'],due:'2026-11-04',subs:[]},
+    {seed:'wp-thu-plan',listId:'weekplan',title:'周四：方案/规划 + KPI拆解定稿对齐老板',note:'把周一KPI初稿定稿，与老板对齐目标。15-17点方案块。',pri:2,tags:['一周计划','工作','KPI'],due:'2026-11-05',subs:[]},
+    {seed:'wp-thu-shise',listId:'weekplan',title:'周四晚：拾色小红书笔记1篇',note:'本周第2篇副业笔记。',pri:2,tags:['一周计划','副业','小红书'],due:'2026-11-05',subs:[]},
+    {seed:'wp-fri-xhs',listId:'weekplan',title:'周五：发星豆社小红书笔记1篇',note:'本周第3篇工作笔记(一三五月发,共3篇)。',pri:2,tags:['一周计划','工作','小红书'],due:'2026-11-06',subs:[]},
+    {seed:'wp-sat-kt',listId:'weekplan',title:'周六上午：快团团半自动上架批次(20-30 SKU)',note:'上架已能半自动(不是瓶颈)，重点在引流。先定主推品，半自动填表上架。',pri:2,tags:['一周计划','副业','上架'],due:'2026-11-07',subs:[]},
+    {seed:'wp-sat-shise',listId:'weekplan',title:'周六下午：拾色数据复盘',note:'看引流咨询/出单/月销vs目标(月入3-4K中期目标,前2月先跑通闭环+攒20篇笔记)。',pri:2,tags:['一周计划','副业','复盘'],due:'2026-11-07',subs:[]},
+    {seed:'wp-sun-board',listId:'weekplan',title:'周日：数据看板轻量版搭建',note:'当前数据听天由命，17-19点复盘块入看板。先搭轻量版(注册/GMV/渠道来源每日追踪)。',pri:2,tags:['一周计划','工作','看板'],due:'2026-11-08',subs:[]},
+    {seed:'wp-sun-douyin',listId:'weekplan',title:'周日：抖音账号注册装修',note:'第二流量入口(好评卡已发,抖音号待做)。注册+装修主页+规划内容。',pri:2,tags:['一周计划','工作','抖音'],due:'2026-11-08',subs:[]},
+    {seed:'wp-sun-sop',listId:'weekplan',title:'周日：企微承接SOP v1 整理',note:'每天在做但没规范，本周写成SOP v1(欢迎语/分层/唤醒)。',pri:2,tags:['一周计划','工作','私域'],due:'2026-11-08',subs:[]},
+    {seed:'wp-sun-review',listId:'weekplan',title:'周日晚：元认知周复盘15分钟',note:'问自己:时间花在成长还是三大坑(凑热闹/随大流/操瞎心)?下周计划排期。',pri:1,tags:['一周计划','提升','复盘'],due:'2026-11-08',subs:[]},
   ];
   function todayStr(){
     const d=new Date();
