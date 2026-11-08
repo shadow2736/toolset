@@ -118,8 +118,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .bars .col .stk{display:flex;flex-direction:column;justify-content:flex-end;width:22px}
 .bars .col .b{width:22px;border-radius:3px 3px 0 0}
 .bars .col .b.exp{background:var(--exp)}
-.bars .col .b.inc{background:var(--inc)}
-.bars .col .lab{font-size:10px;color:var(--ink-3);margin-top:6px}
+  .bars .col .b.inc{background:var(--inc)}
+  .bars .col .lab{font-size:10px;color:var(--ink-3);margin-top:6px}
+  .trend{width:100%;height:auto;display:block}
+  .ymsel{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 18px 2px}
+  .ymsel-s{appearance:none;-webkit-appearance:none;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 30px 8px 12px;font-size:14px;color:var(--ink);cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%239AA0AC'/></svg>");background-repeat:no-repeat;background-position:right 12px center}
+  .ymsel-s:focus{outline:none;border-color:var(--brand)}
 .budget-row{padding:8px 14px}
 .budget-row .bt{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
 .budget-row .bt .used{color:var(--exp);font-weight:600}
@@ -627,9 +631,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   }
   function bindDetail(){bindHome();}
 
+  let reportYM=ymStr(new Date());
   // 报表
   function renderReport(){
-    const ym=ymStr(new Date());
+    const ym=reportYM;
     const recs=visibleRecords();
     const mr=monthRecords(recs,ym);
     const exp=sumBy(mr,'exp');
@@ -643,8 +648,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       const pc=exp>0?Math.round(s.value/exp*100):0;
       return `<div class="lg"><span class="dot" style="background:${s.color}"></span>${esc(s.name)}<span class="pc">¥${fmtS(s.value)} ${pc}%</span></div>`;
     }).join(''):'<div class="lg" style="color:var(--ink-3)">本月暂无支出</div>';
-    // 近6月柱状
-    const bars=renderBars(recs);
+    // 近6月趋势（双折线）
+    const trend=renderTrend(recs);
     // 预算
     const budget=state.budget.total||0;
     const used=exp;
@@ -654,11 +659,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       <div class="bar-bg"><div class="bar-fg" style="width:${pct}%"></div></div>
       <div class="row" style="margin-top:8px"><button class="btn" style="margin:0" id="editBudget">修改预算</button></div>
     </div>`;
+    // 年月选择器（控制支出构成）
+    const yrs=Array.from(new Set(recs.map(r=>r.date.slice(0,4)))).sort();
+    const yList=yrs.length?yrs:[String(new Date().getFullYear())];
+    const curY=ym.slice(0,4),curM=ym.slice(5,7);
+    const sel=`<div class="ymsel"><select id="repYear" class="ymsel-s">`+yList.map(y=>'<option value="'+y+'"'+(y===curY?' selected':'')+'>'+y+'年</option>').join('')+`</select><select id="repMonth" class="ymsel-s">`+Array.from({length:12},(_,i)=>{const m=String(i+1).padStart(2,'0');return '<option value="'+m+'"'+(m===curM?' selected':'')+'>'+m+'月</option>';}).join('')+`</select></div>`;
     return `
+      ${sel}
       <div class="sec-t">${ym} 支出构成</div>
       <div class="card"><div class="donut-wrap">${donut}<div class="legend">${legend}</div></div></div>
       <div class="sec-t">近 6 个月收支</div>
-      <div class="card">${bars}</div>
+      <div class="card">${trend}</div>
       ${budgetHtml}`;
   }
   function renderDonut(segs,total){
@@ -683,22 +694,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       <text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="16" font-weight="700" fill="#FF5B5B">¥${fmtS(total)}</text>`;
     return `<svg width="160" height="160" viewBox="0 0 160 160">${paths}${hole}${txt}</svg>`;
   }
-  function renderBars(recs){
+  function renderTrend(recs){
     const now=new Date();const arr=[];
     for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const ym=ymStr(d);
       const mr=monthRecords(recs,ym);arr.push({ym,exp:sumBy(mr,'exp'),inc:sumBy(mr,'inc')});}
     const max=Math.max(1,...arr.map(m=>Math.max(m.exp,m.inc)));
-    const h=130;
-    return `<div class="bars">`+arr.map(m=>{
-      const eh=Math.round(m.exp/max*h),ih=Math.round(m.inc/max*h);
-      return `<div class="col"><div class="stk">
-        <div class="b inc" style="height:${ih}px" title="收入¥${fmtS(m.inc)}"></div>
-        <div class="b exp" style="height:${eh}px" title="支出¥${fmtS(m.exp)}"></div>
-      </div><div class="lab">${m.ym.slice(5)}月</div></div>`;
-    }).join('')+`</div>
-    <div style="display:flex;justify-content:center;gap:16px;padding:2px 0 12px;font-size:11px;color:var(--ink-3)">
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--exp);border-radius:2px;margin-right:4px"></span>支出</span>
-      <span><span style="display:inline-block;width:10px;height:10px;background:var(--inc);border-radius:2px;margin-right:4px"></span>收入</span>
+    const C_E='#FF5B5B',C_I='#2BBF7E';
+    const W=600,H=240,pl=46,pr=12,pt=20,pb=34;
+    const pw=W-pl-pr, ph=H-pt-pb;
+    const X=i=>pl+(arr.length>1? i*pw/(arr.length-1):pw/2);
+    const Y=v=>pt+ph-(v/max)*ph;
+    let grid='';const steps=4;
+    for(let s=0;s<=steps;s++){const val=max*s/steps;const y=Y(val);
+      grid+=`<line x1="${pl}" y1="${y.toFixed(1)}" x2="${W-pr}" y2="${y.toFixed(1)}" stroke="#EEF0F3" stroke-width="1"/>`;
+      grid+=`<text x="${pl-6}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#9AA0AC">${fmtS(val)}</text>`;}
+    const expPts=arr.map((m,i)=>`${X(i).toFixed(1)},${Y(m.exp).toFixed(1)}`).join(' ');
+    const incPts=arr.map((m,i)=>`${X(i).toFixed(1)},${Y(m.inc).toFixed(1)}`).join(' ');
+    const dots=arr.map((m,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(m.exp).toFixed(1)}" r="3.2" fill="${C_E}"><title>${m.ym} 支出 ¥${fmtS(m.exp)}</title></circle><circle cx="${X(i).toFixed(1)}" cy="${Y(m.inc).toFixed(1)}" r="3.2" fill="${C_I}"><title>${m.ym} 收入 ¥${fmtS(m.inc)}</title></circle>`).join('');
+    const valLab=arr.map((m,i)=>`<text x="${X(i).toFixed(1)}" y="${(Y(m.inc)-6).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${C_I}">${fmtS(m.inc)}</text><text x="${X(i).toFixed(1)}" y="${(Y(m.exp)+11).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="${C_E}">${fmtS(m.exp)}</text>`).join('');
+    const xlab=arr.map((m,i)=>`<text x="${X(i).toFixed(1)}" y="${H-12}" text-anchor="middle" font-size="10" fill="#6B7080">${m.ym.slice(5)}月</text>`).join('');
+    return `<svg class="trend" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+      ${grid}
+      <polyline points="${incPts}" fill="none" stroke="${C_I}" stroke-width="2.2"/>
+      <polyline points="${expPts}" fill="none" stroke="${C_E}" stroke-width="2.2"/>
+      ${dots}${valLab}${xlab}
+      <line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt+ph}" stroke="#D8DCE3" stroke-width="1"/>
+      <line x1="${pl}" y1="${pt+ph}" x2="${W-pr}" y2="${pt+ph}" stroke="#D8DCE3" stroke-width="1"/>
+    </svg>
+    <div style="display:flex;justify-content:center;gap:16px;padding:2px 0 4px;font-size:11px;color:var(--ink-3)">
+      <span><span style="display:inline-block;width:10px;height:10px;background:${C_E};border-radius:2px;margin-right:4px"></span>支出</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:${C_I};border-radius:2px;margin-right:4px"></span>收入</span>
     </div>`;
   }
   function bindReport(){
@@ -707,6 +732,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       const n=Number(v);if(isNaN(n)||n<0){toast('请输入正确金额');return false;}
       state.budget.total=n;save();render();toast('预算已更新');return true;
     },'number');};
+    const ry=document.getElementById('repYear'),rm=document.getElementById('repMonth');
+    const onYM=()=>{reportYM=ry.value+'-'+rm.value;const v=document.getElementById('view');v.innerHTML=renderReport();bindReport();};
+    if(ry)ry.onchange=onYM;
+    if(rm)rm.onchange=onYM;
   }
 
   // 我的
