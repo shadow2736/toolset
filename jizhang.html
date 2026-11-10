@@ -104,6 +104,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .meta-row .m{flex:1;background:#F6F7F9;border-radius:10px;padding:9px 10px;font-size:13px;color:var(--ink-2);position:relative}
 .meta-row .m input,.meta-row .m select{border:none;background:none;outline:none;width:100%;font-size:13px;color:var(--ink);margin-top:2px;font-family:inherit}
 .meta-row .m input::placeholder{color:var(--ink-3)}
+.meta-row .m .dt{display:flex;gap:6px;align-items:center;margin-top:2px}
+.meta-row .m .dt input{border:none;background:none;outline:none;flex:1;min-width:0;font-size:13px;color:var(--ink);font-family:inherit}
 .save-btn{width:calc(100% - 28px);margin:0 14px 18px;padding:14px;border:none;border-radius:12px;
   background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;font-size:16px;font-weight:700;cursor:pointer}
 .save-btn:disabled{opacity:.5}
@@ -341,6 +343,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 
   // ---------- 工具函数 ----------
   function todayStr(){const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+  function nowTimeStr(){const d=new Date();const p=n=>String(n).padStart(2,'0');return p(d.getHours())+':'+p(d.getMinutes());}
   function ymStr(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1);}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function fmt(n){const v=Math.round((Number(n)||0)*100)/100;return v.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -409,7 +412,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   // ---------- 全局状态 ----------
   let state=null;
   let curTab='home';
-  let sheet={open:false,type:'exp',amount:'',catId:null,date:todayStr(),account:'wechat',note:'',editId:null};
+  let sheet={open:false,type:'exp',amount:'',catId:null,date:todayStr(),time:nowTimeStr(),account:'wechat',note:'',editId:null};
 
   // ---------- 渲染：顶栏 ----------
   function renderTop(){
@@ -583,7 +586,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     const a=accById(r.account)||{name:''};
     const sign=r.type==='exp'?'-':'+';
     const cls=r.type==='exp'?'exp':'inc';
-    const sub=[r.date,a.name,r.note].filter(Boolean).join(' · ');
+    const sub=[r.date+(r.time?' '+r.time:''),a.name,r.note].filter(Boolean).join(' · ');
     return `<div class="record" data-rec="${r.id}">
       <div class="ic">${c.icon}</div>
       <div class="mid"><div class="n">${esc(c.name)}</div><div class="s">${esc(sub)}</div></div>
@@ -1304,9 +1307,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   // ---------- 记账 sheet ----------
   function openSheet(type,catId,editRec){
     if(editRec){
-      sheet={open:true,type:editRec.type,amount:String(editRec.amount),catId:editRec.cat,date:editRec.date,account:editRec.account,note:editRec.note||'',editId:editRec.id};
+      sheet={open:true,type:editRec.type,amount:String(editRec.amount),catId:editRec.cat,date:editRec.date,time:editRec.time||nowTimeStr(),account:editRec.account,note:editRec.note||'',editId:editRec.id};
     }else{
-      sheet={open:true,type:type||'exp',amount:'',catId:catId||(state.cats[type||'exp'][0].id),date:todayStr(),account:'wechat',note:'',editId:null};
+      sheet={open:true,type:type||'exp',amount:'',catId:catId||(state.cats[type||'exp'][0].id),date:todayStr(),time:nowTimeStr(),account:'wechat',note:'',editId:null};
     }
     renderSheet();
     document.getElementById('mask').classList.add('show');
@@ -1329,7 +1332,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       <div class="amt-box"><div class="a">${amtHtml}</div></div>
       <div class="cats">${cats.map(c=>`<div class="c ${sheet.catId===c.id?'on':''}" data-cat="${c.id}"><div class="ic">${c.icon}</div><div class="t">${esc(c.name)}</div></div>`).join('')}</div>
       <div class="meta-row">
-        <div class="m">日期<input type="date" id="shDate" value="${sheet.date}"></div>
+        <div class="m">日期<div class="dt"><input type="date" id="shDate" value="${sheet.date}"><input type="time" id="shTime" value="${sheet.time}" step="60"></div></div>
         <div class="m">账户<select id="shAcc">${accOpts}</select></div>
       </div>
       <div class="meta-row" style="padding-top:0">
@@ -1348,6 +1351,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     sh.querySelectorAll('[data-cat]').forEach(el=>el.onclick=()=>{sheet.catId=el.dataset.cat;renderSheet();});
     sh.querySelector('#sheetClose').onclick=closeSheet;
     sh.querySelector('#shDate').onchange=e=>sheet.date=e.target.value;
+    sh.querySelector('#shTime').onchange=e=>sheet.time=e.target.value;
     sh.querySelector('#shAcc').onchange=e=>sheet.account=e.target.value;
     sh.querySelector('#shNote').oninput=e=>sheet.note=e.target.value;
     sh.querySelectorAll('[data-k]').forEach(el=>el.onclick=()=>{
@@ -1370,12 +1374,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       const rec=state.records.find(x=>x.id===sheet.editId);
       if(rec){
         rec.type=sheet.type;rec.amount=Math.round(amt*100)/100;rec.cat=sheet.catId;
-        rec.account=sheet.account;rec.note=sheet.note.trim();rec.date=sheet.date;
+        rec.account=sheet.account;rec.note=sheet.note.trim();rec.date=sheet.date;rec.time=sheet.time;
       }
       save();closeSheet();render();
       toast('已修改：'+(c?c.name:'')+' ¥'+fmt(amt));
     }else{
-      const rec={id:uid(),type:sheet.type,amount:Math.round(amt*100)/100,cat:sheet.catId,account:sheet.account,note:sheet.note.trim(),date:sheet.date,book:state.currentBook==='all'?'daily':state.currentBook,ts:Date.now()};
+      const rec={id:uid(),type:sheet.type,amount:Math.round(amt*100)/100,cat:sheet.catId,account:sheet.account,note:sheet.note.trim(),date:sheet.date,time:sheet.time,book:state.currentBook==='all'?'daily':state.currentBook,ts:Date.now()};
       state.records.push(rec);save();
       closeSheet();render();
       toast((sheet.type==='exp'?'支出':'收入')+'已记：'+(c?c.name:'')+' ¥'+fmt(amt));
@@ -1387,7 +1391,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     const c=catById(r.type,r.cat)||{name:'未分类',icon:'❓'};
     const sign=r.type==='exp'?'-':'+';
     const cls=r.type==='exp'?'exp':'inc';
-    const sub=[r.date,(accById(r.account)||{}).name,r.note].filter(Boolean).join(' · ');
+    const sub=[r.date+(r.time?' '+r.time:''),(accById(r.account)||{}).name,r.note].filter(Boolean).join(' · ');
     const html=`<h3>这笔记录</h3>
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0 16px">
         <div style="width:42px;height:42px;border-radius:50%;background:#F3F4F7;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${c.icon}</div>
