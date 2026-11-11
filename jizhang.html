@@ -352,6 +352,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   function catById(type,id){return (state.cats[type]||[]).find(c=>c.id===id);}
   function accById(id){return (state.accounts||[]).find(a=>a.id===id);}
   function bookById(id){return state.books.find(b=>b.id===id);}
+  function debtById(id){return (state.debts||[]).find(d=>d.id===id);}
+  // 还款自动扣减负债台账：保存时调用（按金额从目标渠道 total 扣减，最低 0）
+  function applyRepay(rec){
+    if(!rec||rec.cat!=='repay'||!rec.target)return;
+    const d=debtById(rec.target);if(!d)return;
+    const remain=Math.max(0,(Number(d.total)||0)-(Number(rec.amount)||0));
+    d.total=Math.round(remain*100)/100;
+  }
+  // 回退还款扣减：修改/删除还款记录前调用，把原金额加回目标渠道
+  function revertRepay(rec){
+    if(!rec||rec.cat!=='repay'||!rec.target)return;
+    const d=debtById(rec.target);if(!d)return;
+    const back=(Number(d.total)||0)+(Number(rec.amount)||0);
+    d.total=Math.round(back*100)/100;
+  }
   function monthRecords(recs,ym){
     return recs.filter(r=>r.date&&r.date.slice(0,7)===ym);
   }
@@ -586,10 +601,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     const a=accById(r.account)||{name:''};
     const sign=r.type==='exp'?'-':'+';
     const cls=r.type==='exp'?'exp':'inc';
-    const sub=[r.date+(r.time?' '+r.time:''),a.name,r.note].filter(Boolean).join(' · ');
+    const sub=[r.date+(r.time?' '+r.time:''),a.name];
+    if(r.cat==='repay'&&r.target){const d=debtById(r.target);if(d)sub.push('还 '+d.name);}
+    sub.push(r.note);
+    const subStr=sub.filter(Boolean).join(' · ');
     return `<div class="record" data-rec="${r.id}">
       <div class="ic">${c.icon}</div>
-      <div class="mid"><div class="n">${esc(c.name)}</div><div class="s">${esc(sub)}</div></div>
+      <div class="mid"><div class="n">${esc(c.name)}</div><div class="s">${esc(subStr)}</div></div>
       <div class="amt ${cls}">${sign}¥${fmt(r.amount)}</div>
     </div>`;
   }
@@ -886,10 +904,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
         const t=Number(d.total)||0;
         const pct=max>0?Math.round(t/max*100):0;
         const share=total>0?Math.round(t/total*100):0;
+        const cleared=t<=0;
         return `<div class="ditem" data-debt="${d.id}">
           <div class="dic">${d.icon||'📌'}</div>
           <div class="dmid">
-            <div class="dn">${esc(d.name)}</div>
+            <div class="dn">${esc(d.name)}${cleared?' <span style="color:var(--inc);font-size:12px;font-weight:600">✓已还清</span>':''}</div>
             <div class="dbar"><i style="width:${pct}%"></i></div>
             <div class="ds">占总额 ${share}%</div>
           </div>
@@ -900,7 +919,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     return `<div class="sec-t">按欠款渠道登记（只记总额）</div>
       <div class="card" style="margin-top:4px;padding:4px 0">${body}</div>
       <button class="btn primary" id="addDebt" style="margin-top:12px">＋ 添加渠道</button>
-      <div class="about">点任一渠道可更新总额 · 还掉部分后把剩余欠款填进来即可<br>金额口径：2026-10 还款计划最新版（合计 157,729.41）</div>`;
+      <div class="about">记「还款」并选择目标，会自动从这里扣减；也可点渠道手动改总额<br>金额口径：2026-10 还款计划最新版（合计 157,729.41）</div>`;
   }
   function bindDebt(){
     document.querySelectorAll('[data-debt]').forEach(el=>el.onclick=()=>{
@@ -1306,10 +1325,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 
   // ---------- 记账 sheet ----------
   function openSheet(type,catId,editRec){
+    const t=type||'exp';
+    const cid=catId||(state.cats[t][0].id);
     if(editRec){
-      sheet={open:true,type:editRec.type,amount:String(editRec.amount),catId:editRec.cat,date:editRec.date,time:editRec.time||nowTimeStr(),account:editRec.account,note:editRec.note||'',editId:editRec.id};
+      sheet={open:true,type:editRec.type,amount:String(editRec.amount),catId:editRec.cat,date:editRec.date,time:editRec.time||nowTimeStr(),account:editRec.account,note:editRec.note||'',target:editRec.target||null,editId:editRec.id};
     }else{
-      sheet={open:true,type:type||'exp',amount:'',catId:catId||(state.cats[type||'exp'][0].id),date:todayStr(),time:nowTimeStr(),account:'wechat',note:'',editId:null};
+      const defTarget=(cid==='repay'&&(state.debts||[]).length)?state.debts[0].id:null;
+      sheet={open:true,type:t,amount:'',catId:cid,date:todayStr(),time:nowTimeStr(),account:'wechat',note:'',target:defTarget,editId:null};
     }
     renderSheet();
     document.getElementById('mask').classList.add('show');
@@ -1321,6 +1343,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     const cats=state.cats[sheet.type];
     const amtHtml=sheet.amount?`<span class="cur">¥</span>${sheet.amount}`:`<span class="cur">¥</span>0`;
     const accOpts=state.accounts.map(a=>`<option value="${a.id}" ${sheet.account===a.id?'selected':''}>${a.icon} ${a.name}</option>`).join('');
+    const debts=state.debts||[];
+    const showTarget=(sheet.type==='exp'&&sheet.catId==='repay');
+    const targetOpts=debts.length?debts.map(d=>`<option value="${d.id}" ${sheet.target===d.id?'selected':''}>${d.icon||''} ${esc(d.name)}（剩 ¥${fmtS(d.total)}）</option>`).join(''):`<option value="">（无负债渠道，请先在「工具箱→负债台账」添加）</option>`;
     sh.innerHTML=`
       <div class="sh-top">
         <div class="seg">
@@ -1331,6 +1356,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       </div>
       <div class="amt-box"><div class="a">${amtHtml}</div></div>
       <div class="cats">${cats.map(c=>`<div class="c ${sheet.catId===c.id?'on':''}" data-cat="${c.id}"><div class="ic">${c.icon}</div><div class="t">${esc(c.name)}</div></div>`).join('')}</div>
+      ${showTarget?`<div class="meta-row" style="padding-top:0">
+        <div class="m">还款目标<select id="shTarget">${targetOpts}</select></div>
+      </div>`:''}
       <div class="meta-row">
         <div class="m">日期<div class="dt"><input type="date" id="shDate" value="${sheet.date}"><input type="time" id="shTime" value="${sheet.time}" step="60"></div></div>
         <div class="m">账户<select id="shAcc">${accOpts}</select></div>
@@ -1348,7 +1376,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       <button class="save-btn" id="saveRec">${sheet.editId?'保存修改':'保存这笔'}</button>`;
     // 绑定
     sh.querySelectorAll('[data-seg]').forEach(el=>el.onclick=()=>{sheet.type=el.dataset.seg;sheet.catId=state.cats[sheet.type][0].id;renderSheet();});
-    sh.querySelectorAll('[data-cat]').forEach(el=>el.onclick=()=>{sheet.catId=el.dataset.cat;renderSheet();});
+    sh.querySelectorAll('[data-cat]').forEach(el=>el.onclick=()=>{sheet.catId=el.dataset.cat;if(sheet.catId==='repay'&&!sheet.target&&(state.debts||[]).length)sheet.target=state.debts[0].id;renderSheet();});
+    const tsel=sh.querySelector('#shTarget');if(tsel)tsel.onchange=e=>sheet.target=e.target.value;
     sh.querySelector('#sheetClose').onclick=closeSheet;
     sh.querySelector('#shDate').onchange=e=>sheet.date=e.target.value;
     sh.querySelector('#shTime').onchange=e=>sheet.time=e.target.value;
@@ -1373,16 +1402,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     if(sheet.editId){
       const rec=state.records.find(x=>x.id===sheet.editId);
       if(rec){
+        revertRepay(rec); // 先回退旧扣减，避免改金额/目标后重复或错算
         rec.type=sheet.type;rec.amount=Math.round(amt*100)/100;rec.cat=sheet.catId;
         rec.account=sheet.account;rec.note=sheet.note.trim();rec.date=sheet.date;rec.time=sheet.time;
+        rec.target=(sheet.catId==='repay')?sheet.target||null:null;
+        applyRepay(rec);
       }
       save();closeSheet();render();
       toast('已修改：'+(c?c.name:'')+' ¥'+fmt(amt));
     }else{
       const rec={id:uid(),type:sheet.type,amount:Math.round(amt*100)/100,cat:sheet.catId,account:sheet.account,note:sheet.note.trim(),date:sheet.date,time:sheet.time,book:state.currentBook==='all'?'daily':state.currentBook,ts:Date.now()};
-      state.records.push(rec);save();
+      if(sheet.catId==='repay')rec.target=sheet.target||null;
+      state.records.push(rec);applyRepay(rec);save();
       closeSheet();render();
-      toast((sheet.type==='exp'?'支出':'收入')+'已记：'+(c?c.name:'')+' ¥'+fmt(amt));
+      const d=rec.target?debtById(rec.target):null;
+      toast('已记还款'+(d?' · 已还 '+esc(d.name)+' ¥'+fmt(amt):' ¥'+fmt(amt))+(d&&(Number(d.total)||0)<=0?'（已还清✓）':''));
     }
   }
 
@@ -1391,7 +1425,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     const c=catById(r.type,r.cat)||{name:'未分类',icon:'❓'};
     const sign=r.type==='exp'?'-':'+';
     const cls=r.type==='exp'?'exp':'inc';
-    const sub=[r.date+(r.time?' '+r.time:''),(accById(r.account)||{}).name,r.note].filter(Boolean).join(' · ');
+    const subParts=[r.date+(r.time?' '+r.time:''),(accById(r.account)||{}).name];
+    if(r.cat==='repay'&&r.target){const d=debtById(r.target);if(d)subParts.push('还 '+d.name);}
+    subParts.push(r.note);
+    const sub=subParts.filter(Boolean).join(' · ');
     const html=`<h3>这笔记录</h3>
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0 16px">
         <div style="width:42px;height:42px;border-radius:50%;background:#F3F4F7;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${c.icon}</div>
@@ -1410,6 +1447,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     document.getElementById('raEdit').onclick=()=>{hidePop();openSheet(r.type,null,r);};
     document.getElementById('raDel').onclick=()=>{
       if(confirm('确定删除这条记录？\n'+c.name+' '+sign+'¥'+fmt(r.amount))){
+        revertRepay(r);
         state.records=state.records.filter(x=>x.id!==r.id);save();hidePop();render();toast('已删除');
       }
     };
