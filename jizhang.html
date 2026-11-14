@@ -63,14 +63,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .day-sub{display:flex;justify-content:space-between;padding:8px 12px 3px;font-size:12px;color:var(--ink-3);font-weight:500}
 .day-sub .r{color:var(--ink-3);font-weight:400}
 .empty{padding:40px 16px;text-align:center;color:var(--ink-3);font-size:14px}
-.fab{position:absolute;right:16px;bottom:82px;
-  background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;border:none;
+.fab-col{position:fixed;left:0;right:0;bottom:78px;max-width:480px;margin:0 auto;
+  display:flex;flex-direction:column;gap:10px;align-items:flex-end;padding-right:16px;z-index:18}
+.fab{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;border:none;
   height:38px;padding:0 15px 0 11px;border-radius:19px;font-size:13px;font-weight:600;box-shadow:0 3px 12px rgba(242,100,30,.34);
   cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;line-height:1;
   transition:transform .15s,box-shadow .15s}
 .fab:active{transform:scale(.94);box-shadow:0 1px 6px rgba(242,100,30,.3)}
 .fab .plus{font-size:17px;font-weight:400;line-height:1}
-.bottom{position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;
+.fab.mini{height:34px;font-size:12px;padding:0 13px 0 10px;background:#fff;color:var(--brand);
+  border:1px solid var(--line);box-shadow:0 3px 12px rgba(0,0,0,.16)}
+.fab.mini:active{transform:scale(.94)}
+.bottom{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;z-index:15;
   display:flex;background:#fff;border-top:1px solid var(--line);box-shadow:0 -2px 12px rgba(0,0,0,.04)}
 .bottom .tab{flex:1;text-align:center;padding:8px 0 9px;font-size:11px;color:var(--ink-3);cursor:pointer}
 .bottom .tab .ic{font-size:20px;display:block;margin-bottom:1px}
@@ -237,7 +241,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   .bottom{display:none}
   .topbar{border-radius:0;padding:22px 28px 26px}
   .balance .num{font-size:40px}
-  .fab{right:32px;bottom:32px;padding:0 18px 0 13px;height:42px;font-size:14px}
+  .fab{padding:0 18px 0 13px;height:42px;font-size:14px}
+  .fab-col{right:0;bottom:74px;padding-right:32px}
   .view{padding-bottom:34px}
   .card,.quick,.sec-t{padding-left:28px;padding-right:28px;margin-left:18px;margin-right:18px}
   .quick,.sec-t{padding-left:18px;padding-right:18px}
@@ -268,7 +273,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   <div class="main" id="main">
     <div class="topbar" id="topbar"></div>
     <div class="view" id="view"></div>
-    <button class="fab" id="fab"><span class="plus">+</span>记一笔</button>
+    <div class="fab-col" id="fabCol">
+      <button class="fab mini" id="fabImport">📥 导入账单</button>
+      <button class="fab" id="fab"><span class="plus">+</span>记一笔</button>
+    </div>
   </div>
   <div class="bottom" id="bottom"></div>
 
@@ -1646,9 +1654,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   // ---------- 全局绑定 ----------
   function bindView(){
     document.getElementById('fab').onclick=()=>openSheet('exp');
+    const fi=document.getElementById('fabImport');
+    if(fi)fi.onclick=importWxBbill;
     document.getElementById('mask').onclick=closeSheet;
-    const fab=document.getElementById('fab');
-    fab.style.display=(curTab==='wish')?'none':'';
+    const fabCol=document.getElementById('fabCol');
+    if(fabCol)fabCol.style.display=(curTab==='wish')?'none':'';
   }
 
   // ---------- 启动 ----------
