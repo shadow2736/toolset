@@ -274,6 +274,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     <div class="topbar" id="topbar"></div>
     <div class="view" id="view"></div>
     <div class="fab-col" id="fabCol">
+      <button class="fab mini" id="fabOcr">📷 识别</button>
       <button class="fab mini" id="fabImport">📥 导入账单</button>
       <button class="fab" id="fab"><span class="plus">+</span>记一笔</button>
     </div>
@@ -851,7 +852,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
         <button class="btn primary" id="exportBtn">⬇ 导出备份（JSON）</button>
         <button class="btn" id="importBtn">⬆ 导入备份（JSON）</button>
         <button class="btn" id="importWxBbtn">⬆ 导入微信账单（Excel/CSV）</button>
+        <button class="btn" id="importWxBshotBtn">📷 截图识别账单（手机）</button>
         <input type="file" id="wxBillFile" accept=".xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+        <input type="file" id="wxShotFile" accept="image/*" multiple style="display:none">
         <button class="btn danger" id="clearBtn">🗑 清空所有记录</button>
       </div>
       <div class="about">记账本 v1.1 · 数据默认存本机，开启云同步后多端一致<br>模仿「随手记」风格 · 卢比出品</div>`;
@@ -890,6 +893,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     if(iw)iw.onclick=importWxBbill;
     const wf=document.getElementById('wxBillFile');
     if(wf)wf.onchange=()=>{const f=wf.files[0];if(f)handleWxBbill(f);wf.value='';};
+    const isb=document.getElementById('importWxBshotBtn');
+    if(isb)isb.onclick=importWxBshot;
+    const fo=document.getElementById('fabOcr');
+    if(fo)fo.onclick=importWxBshot;
+    const sf=document.getElementById('wxShotFile');
+    if(sf)sf.onchange=()=>{if(sf.files&&sf.files.length)handleWxBshot(sf.files);sf.value='';};
     const cl=document.getElementById('clearBtn');
     if(cl)cl.onclick=()=>{if(confirm('确定清空所有记账记录？分类/账本/预算会保留。此操作不可撤销！')){
       state.records=[];save();render();toast('已清空记录');}};
@@ -1649,6 +1658,99 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     hidePop();
     render();
     toast('已导入 '+added+' 笔');
+  }
+
+  // ---------- 截图识别账单（OCR，手机端） ----------
+  function ensureTesseract(){
+    return new Promise((res,rej)=>{
+      if(window.Tesseract){res();return;}
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js';
+      s.onload=()=>res();
+      s.onerror=()=>rej(new Error('OCR组件加载失败'));
+      document.head.appendChild(s);
+    });
+  }
+  function importWxBshot(){ const f=document.getElementById('wxShotFile'); if(f)f.click(); }
+  async function handleWxBshot(fileList){
+    const files=[...(fileList||[])];
+    if(!files.length)return;
+    toast('OCR组件加载中…');
+    try{ await ensureTesseract(); }catch(e){ toast('OCR组件加载失败，请联网后重试'); return; }
+    let rows=[];
+    for(let i=0;i<files.length;i++){
+      toast('识别中 ('+(i+1)+'/'+files.length+')…');
+      const txt=await ocrOne(files[i]);
+      rows=rows.concat(parseOcrText(txt));
+    }
+    if(!rows.length){ toast('未从图片识别到账单，请确认是微信账单明细截图'); return; }
+    wxPreviewRows=rows;
+    renderWxPreview();
+  }
+  async function ocrOne(file){
+    const url=URL.createObjectURL(file);
+    try{
+      const res=await Tesseract.recognize(url,'chi_sim+eng',{logger:function(){}});
+      return res.data.text||'';
+    }catch(e){ console.error(e); return ''; }
+    finally{ try{URL.revokeObjectURL(url);}catch(_){} }
+  }
+  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function normDate(s){
+    if(!s)return '';
+    let m=s.match(/20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}/);
+    if(m)return m[0].replace(/[\/.]/g,'-');
+    m=s.match(/(\d{1,2})月(\d{1,2})[日号]?/);
+    if(m)return todayStr().slice(0,4)+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
+    m=s.match(/(\d{1,2})[-/.](\d{1,2})/);
+    if(m)return todayStr().slice(0,4)+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
+    return '';
+  }
+  function matchAmount(l){
+    let m=l.match(/[¥￥]\s*-?\d+(\.\d{1,2})?/);
+    if(!m)m=l.match(/-?\d+\.\d{2}/);
+    if(!m)return null;
+    const raw=m[0];
+    const val=Math.abs(parseFloat(raw.replace(/[¥￥]/g,'')));
+    return {raw:raw,val:val};
+  }
+  function parseOcrText(text){
+    const lines=(text||'').split(/\r?\n/).map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+    const out=[];
+    let lastDate='', lastTime='', lastMer=[];
+    const commit=function(merchant,amt,dir){
+      merchant=(merchant||'').replace(/^(支出|收入|转账|红包|退款|零钱|微信红包|扫二维码|转账给|收付款)\s*/,'').trim().slice(0,60);
+      if(!(amt>0))return null;
+      const cat=guessCat(merchant,'',dir);
+      const date=normDate(lastDate)||todayStr(), time=(lastTime||'00:00').slice(0,5);
+      const dup=state.records.some(x=>x.date===date&&(x.time||'').slice(0,5)===time&&(x.note||'')===merchant&&Math.abs((x.amount||0)-amt)<0.005);
+      return {date:date,time:time,merchant:merchant,amount:amt,dir:dir,cat:cat,status:dup?'重复':'新增',checked:!dup};
+    };
+    for(const l of lines){
+      const dm=l.match(/20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}|(\d{1,2})月(\d{1,2})[日号]?|(\d{1,2})[-/.](\d{1,2})/);
+      const tm=l.match(/\d{1,2}:\d{2}(?::\d{2})?/);
+      const am=matchAmount(l);
+      if(dm)lastDate=l;
+      if(tm)lastTime=tm[0];
+      if(am){
+        let dir='exp';
+        if(/收入|红包|退款|收款|\+/.test(l))dir='inc';
+        const inline=l.slice(0,l.indexOf(am.raw)).replace(/[¥￥]/g,'').trim();
+        const mer=(inline?inline+' ':'')+lastMer.join(' ');
+        if(/收入|进账|红包/.test(mer))dir='inc';
+        const r=commit(mer,am.val,dir);
+        if(r)out.push(r);
+        lastMer=[];
+        continue;
+      }
+      if(l && !/^[\d\s:.\-/月日号+]+$/.test(l) && l.length>1){
+        if(!/^(支出|收入|转账|红包|退款|零钱|微信|支付|交易|扫码|转账给|收付款|明细|账单)$/.test(l)){
+          lastMer.push(l);
+          if(lastMer.join(' ').length>80)lastMer=[lastMer.join(' ').slice(-80)];
+        }
+      }
+    }
+    return out;
   }
 
   // ---------- 全局绑定 ----------
