@@ -274,8 +274,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     <div class="topbar" id="topbar"></div>
     <div class="view" id="view"></div>
     <div class="fab-col" id="fabCol">
-      <button class="fab mini" id="fabOcr">📷 识别</button>
-      <button class="fab mini" id="fabImport">📥 导入账单</button>
       <button class="fab" id="fab"><span class="plus">+</span>记一笔</button>
     </div>
   </div>
@@ -851,10 +849,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
         <div class="t">数据</div>
         <button class="btn primary" id="exportBtn">⬇ 导出备份（JSON）</button>
         <button class="btn" id="importBtn">⬆ 导入备份（JSON）</button>
-        <button class="btn" id="importWxBbtn">⬆ 导入微信账单（Excel/CSV）</button>
-        <button class="btn" id="importWxBshotBtn">📷 截图识别账单（手机）</button>
-        <input type="file" id="wxBillFile" accept=".xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
-        <input type="file" id="wxShotFile" accept="image/*" multiple style="display:none">
         <button class="btn danger" id="clearBtn">🗑 清空所有记录</button>
       </div>
       <div class="about">记账本 v1.1 · 数据默认存本机，开启云同步后多端一致<br>模仿「随手记」风格 · 卢比出品</div>`;
@@ -889,10 +883,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     if(ex)ex.onclick=exportData;
     const im=document.getElementById('importBtn');
     if(im)im.onclick=importData;
-    const iw=document.getElementById('importWxBbtn');
-    if(iw)iw.onclick=importWxBbill;
-    const isb=document.getElementById('importWxBshotBtn');
-    if(isb)isb.onclick=importWxBshot;
     const cl=document.getElementById('clearBtn');
     if(cl)cl.onclick=()=>{if(confirm('确定清空所有记账记录？分类/账本/预算会保留。此操作不可撤销！')){
       state.records=[];save();render();toast('已清空记录');}};
@@ -1512,262 +1502,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     inp.click();
   }
 
-  // ---------- 导入微信账单（Excel/CSV） ----------
-  let wxPreviewRows=[];
-  function loadScript(urls){
-    return new Promise((res,rej)=>{
-      let i=0;
-      const tryNext=()=>{
-        if(i>=urls.length){rej(new Error('脚本加载失败'));return;}
-        const s=document.createElement('script');
-        s.src=urls[i++];
-        s.onload=()=>res();
-        s.onerror=tryNext;
-        document.head.appendChild(s);
-      };
-      tryNext();
-    });
-  }
-  function ensureXLSX(){
-    if(window.XLSX)return Promise.resolve();
-    return loadScript([
-      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
-      'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
-    ]);
-  }
-  function importWxBbill(){
-    const wf=document.getElementById('wxBillFile');
-    if(wf)wf.click();
-  }
-  async function handleWxBbill(file){
-    if(!file)return;
-    toast('解析中…');
-    try{ await ensureXLSX(); }catch(e){ toast('组件加载失败，请联网后重试'); return; }
-    let buf;
-    try{ buf=await file.arrayBuffer(); }catch(e){ toast('读取文件失败'); return; }
-    let wb;
-    try{ wb=XLSX.read(buf,{type:'array'}); }catch(e){ toast('文件解析失败'); return; }
-    const aoa=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-    const rows=parseWxBbill(aoa);
-    if(!rows.length){ toast('未识别到账单明细，请确认是微信导出的账单'); return; }
-    wxPreviewRows=rows;
-    renderWxPreview();
-  }
-  function parseWxBbill(aoa){
-    let hIdx=-1;
-    for(let i=0;i<Math.min(aoa.length,10);i++){
-      const line=(aoa[i]||[]).join(' ');
-      if(/交易时间|时间/.test(line)&&/金额/.test(line)){hIdx=i;break;}
-    }
-    if(hIdx<0)return [];
-    const header=(aoa[hIdx]||[]).map(c=>String(c||''));
-    const col={};
-    header.forEach((h,i)=>{
-      if(/交易时间|时间/.test(h))col.time=i;
-      else if(/收\/支|收支|收付款|收付方向/.test(h))col.dir=i;
-      else if(/交易类型|交易种类/.test(h))col.type=i;
-      else if(/金额/.test(h))col.amt=i;
-      else if(/商品|商户|交易对方|对方|说明|备注/.test(h))col.mer=i;
-    });
-    if(col.time==null||col.amt==null)return [];
-    const out=[];
-    for(let r=hIdx+1;r<aoa.length;r++){
-      const row=(aoa[r]||[]).map(c=>String(c==null?'':c));
-      if(!row.join('').trim())continue;
-      const amtRaw=row[col.amt]||'';
-      const amt=Math.abs(parseFloat(amtRaw.replace(/[^\d.\-]/g,'')));
-      if(!(amt>0))continue; // 跳过空/统计行
-      const tRaw=(row[col.time]||'').trim();
-      const m=tRaw.match(/(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/);
-      if(!m)continue;
-      const date=m[1], time=m[2];
-      const dirRaw=col.dir!=null?row[col.dir]:'';
-      const typeRaw=col.type!=null?row[col.type]:'';
-      let dir='exp';
-      if(/收入|进账|收款/.test(dirRaw))dir='inc';
-      else if(/支出|出账|付款/.test(dirRaw))dir='exp';
-      else if(/退款|收入/.test(typeRaw))dir='inc';
-      const merchant=(col.mer!=null?row[col.mer]:'').trim().slice(0,60);
-      const cat=guessCat(merchant,typeRaw,dir);
-      const dup=state.records.some(x=>x.date===date&&(x.time||'').slice(0,5)===time&&(x.note||'')===merchant&&Math.abs((x.amount||0)-amt)<0.005);
-      out.push({date,time,merchant,amount:amt,dir,cat,status:dup?'重复':'新增',checked:!dup});
-    }
-    return out;
-  }
-  function guessCat(merchant,typeRaw,dir){
-    const m=merchant||'', t=typeRaw||'';
-    if(/红包/.test(t))return dir==='inc'?'redp':'social';
-    if(/转账/.test(t))return 'transfer';
-    if(/退款|退费/.test(t))return dir==='inc'?'other_i':'other_e';
-    if(dir==='inc'){
-      if(/工资|薪资|薪金/.test(m))return 'salary';
-      if(/兼职|劳务/.test(m))return 'part';
-      return 'other_i';
-    }
-    if(/榕城通|乘车|公交|地铁|滴滴|出行|出租|打车|网约车|高铁|火车|机票|携程|12306|加油|停车|加油卡/.test(m))return 'trans';
-    if(/美团|饿了么|餐饮|餐厅|饭店|小吃|麦当劳|肯德基|瑞幸|咖啡|奶茶|食堂|外卖|蜜雪|烘焙|面包|饭/.test(m))return 'food';
-    if(/超市|便利店|京东|淘宝|天猫|拼多多|唯品|贩卖机|自动售货|商城|商店|药店|药房|沃尔玛|永辉|罗森|全家|屈臣氏|日用|百货|小卖/.test(m))return 'shop';
-    if(/医院|诊所|卫生|体检|保健/.test(m))return 'medical';
-    if(/话费|充值|移动|联通|电信|宽带|流量/.test(m))return 'comm';
-    if(/视频|会员|游戏|电影|抖音|快手|音乐|娱乐/.test(m))return 'fun';
-    if(/水电|物业|房租|燃气|供暖|供暖费/.test(m))return 'home';
-    if(/学费|书|培训|课程|网课|教育/.test(m))return 'study';
-    return 'other_e';
-  }
-  function renderWxPreview(){
-    const expCats=state.cats.exp, incCats=state.cats.inc;
-    let body='', addCount=0;
-    wxPreviewRows.forEach((r,idx)=>{
-      if(r.status==='新增')addCount++;
-      const cats=r.dir==='inc'?incCats:expCats;
-      const opts=cats.map(c=>`<option value="${c.id}" ${c.id===r.cat?'selected':''}>${c.name}</option>`).join('')
-        +`<option value="" ${r.cat===''?'selected':''}>未分类</option>`;
-      body+=`<tr style="${r.status==='重复'?'opacity:.5':''}">
-        <td><input type="checkbox" data-idx="${idx}" ${r.checked?'checked':''}></td>
-        <td>${r.date}<br><span style="color:#999">${r.time}</span></td>
-        <td style="text-align:left">${esc(r.merchant)}</td>
-        <td style="color:${r.dir==='inc'?'#2BBF7E':'#FF5B5B'};white-space:nowrap">${r.dir==='inc'?'+':'-'}¥${fmt(r.amount)}</td>
-        <td><select data-cat="${idx}" style="font-size:13px;padding:4px">${opts}</select></td>
-        <td style="color:${r.status==='重复'?'#bbb':'#2BBF7E'}">${r.status}</td>
-      </tr>`;
-    });
-    const html=`<div style="max-width:560px">
-      <div style="font-size:17px;font-weight:700;margin-bottom:4px">微信账单导入预览</div>
-      <div style="font-size:12px;color:#888;margin-bottom:10px">共 ${wxPreviewRows.length} 笔，新增 <b style="color:#2BBF7E">${addCount}</b> 笔，重复（时间+商户+金额已存在）自动取消勾选。分类可下拉修改，确认后写入【日常账本】并同步。</div>
-      <div style="max-height:50vh;overflow:auto;border:1px solid #eee;border-radius:10px">
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="background:#f5f6f8;position:sticky;top:0">
-          <th style="padding:6px">选</th><th style="padding:6px">日期/时间</th><th style="padding:6px;text-align:left">商户</th><th style="padding:6px">金额</th><th style="padding:6px">分类</th><th style="padding:6px">状态</th>
-        </tr></thead><tbody>${body}</tbody>
-      </table></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn primary" style="flex:1" onclick="confirmWxImport()">确认导入（新增 ${addCount} 笔）</button>
-        <button class="btn" style="flex:1" onclick="hidePop()">取消</button>
-      </div>
-    </div>`;
-    showPop(html);
-  }
-  function confirmWxImport(){
-    const box=document.getElementById('popBox');
-    if(!box)return;
-    let added=0;
-    wxPreviewRows.forEach((r,idx)=>{
-      const cb=box.querySelector(`input[data-idx="${idx}"]`);
-      const sel=box.querySelector(`select[data-cat="${idx}"]`);
-      if(cb&&!cb.checked)return;
-      const cat=sel?sel.value:r.cat;
-      state.records.push({id:uid(),type:r.dir,amount:r.amount,cat:cat||'other_e',account:'wechat',note:r.merchant,date:r.date,time:r.time,book:'daily',ts:Date.now()});
-      added++;
-    });
-    save();
-    hidePop();
-    render();
-    toast('已导入 '+added+' 笔');
-  }
-
-  // ---------- 截图识别账单（OCR，手机端） ----------
-  function ensureTesseract(){
-    if(window.Tesseract)return Promise.resolve();
-    return loadScript([
-      'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js',
-      'https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/dist/tesseract.min.js'
-    ]);
-  }
-  function importWxBshot(){ const f=document.getElementById('wxShotFile'); if(f)f.click(); }
-  async function handleWxBshot(fileList){
-    const files=[...(fileList||[])];
-    if(!files.length)return;
-    toast('OCR组件加载中…');
-    try{ await ensureTesseract(); }catch(e){ toast('OCR组件加载失败，请联网后重试'); return; }
-    let rows=[];
-    for(let i=0;i<files.length;i++){
-      toast('识别中 ('+(i+1)+'/'+files.length+')…');
-      const txt=await ocrOne(files[i]);
-      rows=rows.concat(parseOcrText(txt));
-    }
-    if(!rows.length){ toast('未从图片识别到账单，请确认是微信账单明细截图'); return; }
-    wxPreviewRows=rows;
-    renderWxPreview();
-  }
-  async function ocrOne(file){
-    const url=URL.createObjectURL(file);
-    try{
-      const res=await Tesseract.recognize(url,'chi_sim+eng',{logger:function(){}});
-      return res.data.text||'';
-    }catch(e){ console.error(e); return ''; }
-    finally{ try{URL.revokeObjectURL(url);}catch(_){} }
-  }
-  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  function normDate(s){
-    if(!s)return '';
-    let m=s.match(/20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}/);
-    if(m)return m[0].replace(/[\/.]/g,'-');
-    m=s.match(/(\d{1,2})月(\d{1,2})[日号]?/);
-    if(m)return todayStr().slice(0,4)+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
-    m=s.match(/(\d{1,2})[-/.](\d{1,2})/);
-    if(m)return todayStr().slice(0,4)+'-'+String(m[1]).padStart(2,'0')+'-'+String(m[2]).padStart(2,'0');
-    return '';
-  }
-  function matchAmount(l){
-    let m=l.match(/[¥￥]\s*-?\d+(\.\d{1,2})?/);
-    if(!m)m=l.match(/-?\d+\.\d{2}/);
-    if(!m)return null;
-    const raw=m[0];
-    const val=Math.abs(parseFloat(raw.replace(/[¥￥]/g,'')));
-    return {raw:raw,val:val};
-  }
-  function parseOcrText(text){
-    const lines=(text||'').split(/\r?\n/).map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
-    const out=[];
-    let lastDate='', lastTime='', lastMer=[];
-    const commit=function(merchant,amt,dir){
-      merchant=(merchant||'').replace(/^(支出|收入|转账|红包|退款|零钱|微信红包|扫二维码|转账给|收付款)\s*/,'').trim().slice(0,60);
-      if(!(amt>0))return null;
-      const cat=guessCat(merchant,'',dir);
-      const date=normDate(lastDate)||todayStr(), time=(lastTime||'00:00').slice(0,5);
-      const dup=state.records.some(x=>x.date===date&&(x.time||'').slice(0,5)===time&&(x.note||'')===merchant&&Math.abs((x.amount||0)-amt)<0.005);
-      return {date:date,time:time,merchant:merchant,amount:amt,dir:dir,cat:cat,status:dup?'重复':'新增',checked:!dup};
-    };
-    for(const l of lines){
-      const dm=l.match(/20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}|(\d{1,2})月(\d{1,2})[日号]?|(\d{1,2})[-/.](\d{1,2})/);
-      const tm=l.match(/\d{1,2}:\d{2}(?::\d{2})?/);
-      const am=matchAmount(l);
-      if(dm)lastDate=l;
-      if(tm)lastTime=tm[0];
-      if(am){
-        let dir='exp';
-        if(/收入|红包|退款|收款|\+/.test(l))dir='inc';
-        const inline=l.slice(0,l.indexOf(am.raw)).replace(/[¥￥]/g,'').trim();
-        const mer=(inline?inline+' ':'')+lastMer.join(' ');
-        if(/收入|进账|红包/.test(mer))dir='inc';
-        const r=commit(mer,am.val,dir);
-        if(r)out.push(r);
-        lastMer=[];
-        continue;
-      }
-      if(l && !/^[\d\s:.\-/月日号+]+$/.test(l) && l.length>1){
-        if(!/^(支出|收入|转账|红包|退款|零钱|微信|支付|交易|扫码|转账给|收付款|明细|账单)$/.test(l)){
-          lastMer.push(l);
-          if(lastMer.join(' ').length>80)lastMer=[lastMer.join(' ').slice(-80)];
-        }
-      }
-    }
-    return out;
-  }
-
   // ---------- 全局绑定 ----------
   function bindView(){
     document.getElementById('fab').onclick=()=>openSheet('exp');
-    const fi=document.getElementById('fabImport');
-    if(fi)fi.onclick=()=>{toast('请选择微信账单 Excel/CSV 文件');importWxBbill();};
-    const fo=document.getElementById('fabOcr');
-    if(fo)fo.onclick=()=>{toast('请选择微信账单截图（可多选）');importWxBshot();};
-    const wf=document.getElementById('wxBillFile');
-    if(wf)wf.onchange=()=>{const f=wf.files[0];if(f)handleWxBbill(f);wf.value='';};
-    const sf=document.getElementById('wxShotFile');
-    if(sf)sf.onchange=()=>{if(sf.files&&sf.files.length)handleWxBshot(sf.files);sf.value='';};
     document.getElementById('mask').onclick=closeSheet;
     const fabCol=document.getElementById('fabCol');
     if(fabCol)fabCol.style.display=(curTab==='wish')?'none':'';
