@@ -891,14 +891,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     if(im)im.onclick=importData;
     const iw=document.getElementById('importWxBbtn');
     if(iw)iw.onclick=importWxBbill;
-    const wf=document.getElementById('wxBillFile');
-    if(wf)wf.onchange=()=>{const f=wf.files[0];if(f)handleWxBbill(f);wf.value='';};
     const isb=document.getElementById('importWxBshotBtn');
     if(isb)isb.onclick=importWxBshot;
-    const fo=document.getElementById('fabOcr');
-    if(fo)fo.onclick=importWxBshot;
-    const sf=document.getElementById('wxShotFile');
-    if(sf)sf.onchange=()=>{if(sf.files&&sf.files.length)handleWxBshot(sf.files);sf.value='';};
     const cl=document.getElementById('clearBtn');
     if(cl)cl.onclick=()=>{if(confirm('确定清空所有记账记录？分类/账本/预算会保留。此操作不可撤销！')){
       state.records=[];save();render();toast('已清空记录');}};
@@ -1520,15 +1514,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 
   // ---------- 导入微信账单（Excel/CSV） ----------
   let wxPreviewRows=[];
-  function ensureXLSX(){
+  function loadScript(urls){
     return new Promise((res,rej)=>{
-      if(window.XLSX){res();return;}
-      const s=document.createElement('script');
-      s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-      s.onload=()=>res();
-      s.onerror=()=>rej(new Error('SheetJS 加载失败'));
-      document.head.appendChild(s);
+      let i=0;
+      const tryNext=()=>{
+        if(i>=urls.length){rej(new Error('脚本加载失败'));return;}
+        const s=document.createElement('script');
+        s.src=urls[i++];
+        s.onload=()=>res();
+        s.onerror=tryNext;
+        document.head.appendChild(s);
+      };
+      tryNext();
     });
+  }
+  function ensureXLSX(){
+    if(window.XLSX)return Promise.resolve();
+    return loadScript([
+      'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+      'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+    ]);
   }
   function importWxBbill(){
     const wf=document.getElementById('wxBillFile');
@@ -1662,14 +1668,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 
   // ---------- 截图识别账单（OCR，手机端） ----------
   function ensureTesseract(){
-    return new Promise((res,rej)=>{
-      if(window.Tesseract){res();return;}
-      const s=document.createElement('script');
-      s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js';
-      s.onload=()=>res();
-      s.onerror=()=>rej(new Error('OCR组件加载失败'));
-      document.head.appendChild(s);
-    });
+    if(window.Tesseract)return Promise.resolve();
+    return loadScript([
+      'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js',
+      'https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/dist/tesseract.min.js'
+    ]);
   }
   function importWxBshot(){ const f=document.getElementById('wxShotFile'); if(f)f.click(); }
   async function handleWxBshot(fileList){
@@ -1757,7 +1761,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   function bindView(){
     document.getElementById('fab').onclick=()=>openSheet('exp');
     const fi=document.getElementById('fabImport');
-    if(fi)fi.onclick=importWxBbill;
+    if(fi)fi.onclick=()=>{toast('请选择微信账单 Excel/CSV 文件');importWxBbill();};
+    const fo=document.getElementById('fabOcr');
+    if(fo)fo.onclick=()=>{toast('请选择微信账单截图（可多选）');importWxBshot();};
+    const wf=document.getElementById('wxBillFile');
+    if(wf)wf.onchange=()=>{const f=wf.files[0];if(f)handleWxBbill(f);wf.value='';};
+    const sf=document.getElementById('wxShotFile');
+    if(sf)sf.onchange=()=>{if(sf.files&&sf.files.length)handleWxBshot(sf.files);sf.value='';};
     document.getElementById('mask').onclick=closeSheet;
     const fabCol=document.getElementById('fabCol');
     if(fabCol)fabCol.style.display=(curTab==='wish')?'none':'';
